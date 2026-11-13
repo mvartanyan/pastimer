@@ -1,0 +1,1235 @@
+{
+  "lobby": {
+    "id": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+    "code": "7WV7LUJU",
+    "host": "fixture:a",
+    "players": [
+      {
+        "id": "fixture:a",
+        "name": "Alice"
+      },
+      {
+        "id": "fixture:b",
+        "name": "Bob"
+      }
+    ],
+    "game": "high-card-demo",
+    "gameVersion": 1,
+    "version": 2,
+    "phase": "lobby",
+    "state": null,
+    "decks": [],
+    "events": [
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 1,
+        "at": "2026-11-13T09:55:30.016Z",
+        "actor": "fixture:a",
+        "type": "room.created",
+        "data": {
+          "game": "high-card-demo",
+          "gameVersion": 1,
+          "player": {
+            "id": "fixture:a",
+            "name": "Alice"
+          }
+        },
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 2,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:b",
+        "type": "player.joined",
+        "data": {
+          "player": {
+            "id": "fixture:b",
+            "name": "Bob"
+          }
+        },
+        "previousHash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e",
+        "hash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36"
+      }
+    ],
+    "commands": [],
+    "scores": {}
+  },
+  "committing": {
+    "id": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+    "code": "7WV7LUJU",
+    "host": "fixture:a",
+    "players": [
+      {
+        "id": "fixture:a",
+        "name": "Alice"
+      },
+      {
+        "id": "fixture:b",
+        "name": "Bob"
+      }
+    ],
+    "game": "high-card-demo",
+    "gameVersion": 1,
+    "version": 3,
+    "phase": "committing",
+    "state": {
+      "hands": {},
+      "played": {},
+      "scores": {
+        "fixture:a": 0,
+        "fixture:b": 0
+      },
+      "round": 1
+    },
+    "decks": [
+      {
+        "proof": {
+          "protocol": "pastimer-deck-v1",
+          "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+          "shuffleId": 1,
+          "cards": [
+            "QS",
+            "JH",
+            "9S",
+            "2C",
+            "AC",
+            "AH",
+            "9H",
+            "10H",
+            "KH",
+            "7D",
+            "5S",
+            "4S",
+            "7H",
+            "AD",
+            "JC",
+            "KS",
+            "AS",
+            "8D",
+            "4H",
+            "10S",
+            "7C",
+            "10C",
+            "QD",
+            "3D",
+            "3S",
+            "3H",
+            "2S",
+            "6S",
+            "7S",
+            "3C",
+            "KC",
+            "JS",
+            "5C",
+            "JD",
+            "9C",
+            "KD",
+            "4C",
+            "6D",
+            "QH",
+            "8H",
+            "6C",
+            "5H",
+            "2D",
+            "4D",
+            "2H",
+            "5D",
+            "8C",
+            "9D",
+            "QC",
+            "6H",
+            "10D",
+            "8S"
+          ],
+          "salt": "796a9531d57d9b49d170d67e5cad7eb81731dfe565c5a582c65e73a329c9a476"
+        },
+        "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f",
+        "acknowledgements": []
+      }
+    ],
+    "events": [
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 1,
+        "at": "2026-11-13T09:55:30.016Z",
+        "actor": "fixture:a",
+        "type": "room.created",
+        "data": {
+          "game": "high-card-demo",
+          "gameVersion": 1,
+          "player": {
+            "id": "fixture:a",
+            "name": "Alice"
+          }
+        },
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 2,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:b",
+        "type": "player.joined",
+        "data": {
+          "player": {
+            "id": "fixture:b",
+            "name": "Bob"
+          }
+        },
+        "previousHash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e",
+        "hash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 3,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:a",
+        "type": "game.started",
+        "data": {},
+        "previousHash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36",
+        "hash": "ac7e57c05b180fde9d76104936b30af7a3c55369fafbe38cba227bc9b7e91d69"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 4,
+        "at": "2026-11-13T09:55:30.018Z",
+        "actor": "fixture:a",
+        "type": "deck.committed",
+        "data": {
+          "protocol": "pastimer-deck-v1",
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f",
+          "count": 52
+        },
+        "previousHash": "ac7e57c05b180fde9d76104936b30af7a3c55369fafbe38cba227bc9b7e91d69",
+        "hash": "a3b34736c5e79047be4cad595948a42a8d119a77e05e0bebd02457f3ed0f3cb4"
+      }
+    ],
+    "commands": [],
+    "scores": {}
+  },
+  "finished": {
+    "id": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+    "code": "7WV7LUJU",
+    "host": "fixture:a",
+    "players": [
+      {
+        "id": "fixture:a",
+        "name": "Alice"
+      },
+      {
+        "id": "fixture:b",
+        "name": "Bob"
+      }
+    ],
+    "game": "high-card-demo",
+    "gameVersion": 1,
+    "version": 15,
+    "phase": "finished",
+    "state": {
+      "hands": {
+        "fixture:a": [],
+        "fixture:b": []
+      },
+      "played": {},
+      "scores": {
+        "fixture:a": 4,
+        "fixture:b": 2
+      },
+      "round": 6
+    },
+    "decks": [
+      {
+        "proof": {
+          "protocol": "pastimer-deck-v1",
+          "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+          "shuffleId": 1,
+          "cards": [
+            "QS",
+            "JH",
+            "9S",
+            "2C",
+            "AC",
+            "AH",
+            "9H",
+            "10H",
+            "KH",
+            "7D",
+            "5S",
+            "4S",
+            "7H",
+            "AD",
+            "JC",
+            "KS",
+            "AS",
+            "8D",
+            "4H",
+            "10S",
+            "7C",
+            "10C",
+            "QD",
+            "3D",
+            "3S",
+            "3H",
+            "2S",
+            "6S",
+            "7S",
+            "3C",
+            "KC",
+            "JS",
+            "5C",
+            "JD",
+            "9C",
+            "KD",
+            "4C",
+            "6D",
+            "QH",
+            "8H",
+            "6C",
+            "5H",
+            "2D",
+            "4D",
+            "2H",
+            "5D",
+            "8C",
+            "9D",
+            "QC",
+            "6H",
+            "10D",
+            "8S"
+          ],
+          "salt": "796a9531d57d9b49d170d67e5cad7eb81731dfe565c5a582c65e73a329c9a476"
+        },
+        "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f",
+        "acknowledgements": [
+          "fixture:a",
+          "fixture:b"
+        ]
+      }
+    ],
+    "events": [
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 1,
+        "at": "2026-11-13T09:55:30.016Z",
+        "actor": "fixture:a",
+        "type": "room.created",
+        "data": {
+          "game": "high-card-demo",
+          "gameVersion": 1,
+          "player": {
+            "id": "fixture:a",
+            "name": "Alice"
+          }
+        },
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 2,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:b",
+        "type": "player.joined",
+        "data": {
+          "player": {
+            "id": "fixture:b",
+            "name": "Bob"
+          }
+        },
+        "previousHash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e",
+        "hash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 3,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:a",
+        "type": "game.started",
+        "data": {},
+        "previousHash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36",
+        "hash": "ac7e57c05b180fde9d76104936b30af7a3c55369fafbe38cba227bc9b7e91d69"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 4,
+        "at": "2026-11-13T09:55:30.018Z",
+        "actor": "fixture:a",
+        "type": "deck.committed",
+        "data": {
+          "protocol": "pastimer-deck-v1",
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f",
+          "count": 52
+        },
+        "previousHash": "ac7e57c05b180fde9d76104936b30af7a3c55369fafbe38cba227bc9b7e91d69",
+        "hash": "a3b34736c5e79047be4cad595948a42a8d119a77e05e0bebd02457f3ed0f3cb4"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 5,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:a",
+        "type": "deck.acknowledged",
+        "data": {
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f"
+        },
+        "previousHash": "a3b34736c5e79047be4cad595948a42a8d119a77e05e0bebd02457f3ed0f3cb4",
+        "hash": "103028e2d7e9a66d3762acca998e325320b43a16c8014e6e73bf041aa5f69d91"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 6,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:b",
+        "type": "deck.acknowledged",
+        "data": {
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f"
+        },
+        "previousHash": "103028e2d7e9a66d3762acca998e325320b43a16c8014e6e73bf041aa5f69d91",
+        "hash": "c5138d7ab2848f8ca783900f7f6368660097a6db2d09acc61c8c430bbb9703cc"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 7,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:b",
+        "type": "deck.released-to-game",
+        "data": {
+          "shuffleId": 1
+        },
+        "previousHash": "c5138d7ab2848f8ca783900f7f6368660097a6db2d09acc61c8c430bbb9703cc",
+        "hash": "bf3839a3951366776d0c0cac1862b712e145e2e8e71942242055ccc8c5e2125d"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 8,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "f270a0415a375ddfd9b5a4f5c50869da1a22f4a4a6fb9d90c9127960b781a91b"
+        },
+        "previousHash": "bf3839a3951366776d0c0cac1862b712e145e2e8e71942242055ccc8c5e2125d",
+        "hash": "efd9433c2bfc3cb77f5062bddce45b30bb7989cc9fb35d4bc875b9d6c7a02850"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 9,
+        "at": "2026-11-13T09:55:30.020Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "a0a6d1d554753e2cf4fc6294edd04ed147c3cc1d3a5acbdfe9b24b65f0931387"
+        },
+        "previousHash": "efd9433c2bfc3cb77f5062bddce45b30bb7989cc9fb35d4bc875b9d6c7a02850",
+        "hash": "2199f49227f48f7eb8ec126b98c44c2bad0d5bb97f353747b914de3c7707d7c7"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 10,
+        "at": "2026-11-13T09:55:30.020Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 1,
+          "cards": {
+            "fixture:a": "QS",
+            "fixture:b": "JH"
+          },
+          "winners": [
+            "fixture:a"
+          ]
+        },
+        "previousHash": "2199f49227f48f7eb8ec126b98c44c2bad0d5bb97f353747b914de3c7707d7c7",
+        "hash": "feed474ffa0501182d3a90db20a5e75ab77498c151a96b8d0fecd8b6e10d8611"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 11,
+        "at": "2026-11-13T09:55:30.020Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "44a3e42ac7e78de708305f3722325bde0d056bb00fac735f305dc0c5053437cf"
+        },
+        "previousHash": "feed474ffa0501182d3a90db20a5e75ab77498c151a96b8d0fecd8b6e10d8611",
+        "hash": "44a9c794b9b406dcc3ab272318f65eaf6e028e7c486fd1c944fdc446435d4a3d"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 12,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "56ee0e81cc72df0c69a5195b90bdf1bd81cadffc4b18f46a4bddfd0f288f0015"
+        },
+        "previousHash": "44a9c794b9b406dcc3ab272318f65eaf6e028e7c486fd1c944fdc446435d4a3d",
+        "hash": "c8b9a5847f3498a5fd79cf1f1bbfeccd74590a927bdb559a4921df0afad50e31"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 13,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 2,
+          "cards": {
+            "fixture:a": "9S",
+            "fixture:b": "2C"
+          },
+          "winners": [
+            "fixture:a"
+          ]
+        },
+        "previousHash": "c8b9a5847f3498a5fd79cf1f1bbfeccd74590a927bdb559a4921df0afad50e31",
+        "hash": "e47f07ba7342218375becce77a9c02df6877f8794971bd6d4f79765513768a87"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 14,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "e521972c8bb6f2332c8d0a6945b566b29661b667481efd77275a51d024438fa3"
+        },
+        "previousHash": "e47f07ba7342218375becce77a9c02df6877f8794971bd6d4f79765513768a87",
+        "hash": "2dced0f3bf626ffa12fc11581c437969dac22eb36be4f45278f85b8e3d1f75e6"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 15,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "54cac50fb9b5c5ff9077f80cc34ee526793e31a5d7760c9a64dfa4cce7877a4e"
+        },
+        "previousHash": "2dced0f3bf626ffa12fc11581c437969dac22eb36be4f45278f85b8e3d1f75e6",
+        "hash": "cba3f5d92187fc321924e217280f7e8fd760189d219b8aeae4e17ae587e9c633"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 16,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 3,
+          "cards": {
+            "fixture:a": "AC",
+            "fixture:b": "AH"
+          },
+          "winners": [
+            "fixture:a",
+            "fixture:b"
+          ]
+        },
+        "previousHash": "cba3f5d92187fc321924e217280f7e8fd760189d219b8aeae4e17ae587e9c633",
+        "hash": "d4a6e04b320e8dfb37094dc4a1b4f3c89de5557281dac4c01bb74b50e7b1c3fd"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 17,
+        "at": "2026-11-13T09:55:30.022Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "fd2d4041c8a351256a3e59bf2fe5f725e403adad8e626990341111a499e93451"
+        },
+        "previousHash": "d4a6e04b320e8dfb37094dc4a1b4f3c89de5557281dac4c01bb74b50e7b1c3fd",
+        "hash": "b0778e9801a489845a142fe35ad5f97a4d190a5b5ff929a0073ee245d6289f03"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 18,
+        "at": "2026-11-13T09:55:30.022Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "74ffa36f08785d5c3a4c27a95f8ae9ee0acb04a161bb781fc9a67f970fafab4b"
+        },
+        "previousHash": "b0778e9801a489845a142fe35ad5f97a4d190a5b5ff929a0073ee245d6289f03",
+        "hash": "d9de0c5c45a019713c465b27df38ed654573068799212b97d1cb3b38f896d2dd"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 19,
+        "at": "2026-11-13T09:55:30.022Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 4,
+          "cards": {
+            "fixture:a": "9H",
+            "fixture:b": "10H"
+          },
+          "winners": [
+            "fixture:b"
+          ]
+        },
+        "previousHash": "d9de0c5c45a019713c465b27df38ed654573068799212b97d1cb3b38f896d2dd",
+        "hash": "72d63279623d4544db373f322e4105a88a1b95fac5e24dff99b827214d5be14b"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 20,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "7b16bf3bf08178b785a4bf4beef744cf399791490e83935a2d54b0fbde0fbf08"
+        },
+        "previousHash": "72d63279623d4544db373f322e4105a88a1b95fac5e24dff99b827214d5be14b",
+        "hash": "cfafce5332b31dd1d1f6955dc093a6fa3efe0b868df1f5a56a7582f5e7156ac3"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 21,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "b3f4236f4c5ebc614873e596910e8f9164934aba848db54d47f31b104f111687"
+        },
+        "previousHash": "cfafce5332b31dd1d1f6955dc093a6fa3efe0b868df1f5a56a7582f5e7156ac3",
+        "hash": "106b1ceac9559d3666280d5943c812409ec37bdcababdd4675d28b6eef24f2f8"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 22,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 5,
+          "cards": {
+            "fixture:a": "KH",
+            "fixture:b": "7D"
+          },
+          "winners": [
+            "fixture:a"
+          ]
+        },
+        "previousHash": "106b1ceac9559d3666280d5943c812409ec37bdcababdd4675d28b6eef24f2f8",
+        "hash": "e98aeaa5eaebc8fe9df60c56f293545809fb49938f43ceb24ba87f35c2b07dbe"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 23,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:b",
+        "type": "game.finished",
+        "data": {
+          "scores": {
+            "fixture:a": 4,
+            "fixture:b": 2
+          }
+        },
+        "previousHash": "e98aeaa5eaebc8fe9df60c56f293545809fb49938f43ceb24ba87f35c2b07dbe",
+        "hash": "4e5e44ec36b79abccd388e65aaa2092efacb3a2cb0b7e488190ce4fe19188814"
+      }
+    ],
+    "commands": [
+      {
+        "actor": "fixture:a",
+        "version": 5,
+        "action": {
+          "type": "play",
+          "card": "QS"
+        },
+        "salt": "488cccd9370f2698d858198658852d85032f5e651550fae306a5706fca7ef1fe"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 6,
+        "action": {
+          "type": "play",
+          "card": "JH"
+        },
+        "salt": "342f4502ac4e4a66f9b3f3daf278ca5ac02e59b01b5cfaeadb9caa950cb85899"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 7,
+        "action": {
+          "type": "play",
+          "card": "9S"
+        },
+        "salt": "7bda164c2fd071702c71e4e66fd0fee97916e29a9a439d357ae51f6e6badb7d9"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 8,
+        "action": {
+          "type": "play",
+          "card": "2C"
+        },
+        "salt": "174c148f058e98ec61f407b464a1c20f446b3fa546bb946232d54b136603729e"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 9,
+        "action": {
+          "type": "play",
+          "card": "AC"
+        },
+        "salt": "3b0aaefa7c61d5752fae077aebee91a5d4b1b18302d519c027eb5519d3332eac"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 10,
+        "action": {
+          "type": "play",
+          "card": "AH"
+        },
+        "salt": "3be5458add03302c11dbdd7ccdca216cf72e189f2b638bca994d5f6773c5780f"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 11,
+        "action": {
+          "type": "play",
+          "card": "9H"
+        },
+        "salt": "4112ebd0851c7311580c54362ead189d143b4b5980e4ffaab82b1a41a9007cc1"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 12,
+        "action": {
+          "type": "play",
+          "card": "10H"
+        },
+        "salt": "c96aa4f56a53502d445b7732f640862a97c07ce64badbe670d1dfb581af17bcc"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 13,
+        "action": {
+          "type": "play",
+          "card": "KH"
+        },
+        "salt": "bf2bd8f3ad8c9b977b10d5c77540cb4beaf902815e29535ef9260e89ca17c208"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 14,
+        "action": {
+          "type": "play",
+          "card": "7D"
+        },
+        "salt": "83a733a2626653a9850c48ae39fdb98778e456bb5452be912576cf9d3b752079"
+      }
+    ],
+    "scores": {
+      "fixture:a": 4,
+      "fixture:b": 2
+    }
+  },
+  "audit": {
+    "protocol": "pastimer-audit-v1",
+    "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+    "phase": "finished",
+    "events": [
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 1,
+        "at": "2026-11-13T09:55:30.016Z",
+        "actor": "fixture:a",
+        "type": "room.created",
+        "data": {
+          "game": "high-card-demo",
+          "gameVersion": 1,
+          "player": {
+            "id": "fixture:a",
+            "name": "Alice"
+          }
+        },
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 2,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:b",
+        "type": "player.joined",
+        "data": {
+          "player": {
+            "id": "fixture:b",
+            "name": "Bob"
+          }
+        },
+        "previousHash": "86f9c1c5b8897b0198971bbfa4a3b95becf30dd8d52f99eaa5fc74d0ff92c92e",
+        "hash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 3,
+        "at": "2026-11-13T09:55:30.017Z",
+        "actor": "fixture:a",
+        "type": "game.started",
+        "data": {},
+        "previousHash": "38d9dcf1274eb2faebb4b6482b700b9699715ab407611c57607db87a1c903c36",
+        "hash": "ac7e57c05b180fde9d76104936b30af7a3c55369fafbe38cba227bc9b7e91d69"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 4,
+        "at": "2026-11-13T09:55:30.018Z",
+        "actor": "fixture:a",
+        "type": "deck.committed",
+        "data": {
+          "protocol": "pastimer-deck-v1",
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f",
+          "count": 52
+        },
+        "previousHash": "ac7e57c05b180fde9d76104936b30af7a3c55369fafbe38cba227bc9b7e91d69",
+        "hash": "a3b34736c5e79047be4cad595948a42a8d119a77e05e0bebd02457f3ed0f3cb4"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 5,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:a",
+        "type": "deck.acknowledged",
+        "data": {
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f"
+        },
+        "previousHash": "a3b34736c5e79047be4cad595948a42a8d119a77e05e0bebd02457f3ed0f3cb4",
+        "hash": "103028e2d7e9a66d3762acca998e325320b43a16c8014e6e73bf041aa5f69d91"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 6,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:b",
+        "type": "deck.acknowledged",
+        "data": {
+          "shuffleId": 1,
+          "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f"
+        },
+        "previousHash": "103028e2d7e9a66d3762acca998e325320b43a16c8014e6e73bf041aa5f69d91",
+        "hash": "c5138d7ab2848f8ca783900f7f6368660097a6db2d09acc61c8c430bbb9703cc"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 7,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:b",
+        "type": "deck.released-to-game",
+        "data": {
+          "shuffleId": 1
+        },
+        "previousHash": "c5138d7ab2848f8ca783900f7f6368660097a6db2d09acc61c8c430bbb9703cc",
+        "hash": "bf3839a3951366776d0c0cac1862b712e145e2e8e71942242055ccc8c5e2125d"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 8,
+        "at": "2026-11-13T09:55:30.019Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "f270a0415a375ddfd9b5a4f5c50869da1a22f4a4a6fb9d90c9127960b781a91b"
+        },
+        "previousHash": "bf3839a3951366776d0c0cac1862b712e145e2e8e71942242055ccc8c5e2125d",
+        "hash": "efd9433c2bfc3cb77f5062bddce45b30bb7989cc9fb35d4bc875b9d6c7a02850"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 9,
+        "at": "2026-11-13T09:55:30.020Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "a0a6d1d554753e2cf4fc6294edd04ed147c3cc1d3a5acbdfe9b24b65f0931387"
+        },
+        "previousHash": "efd9433c2bfc3cb77f5062bddce45b30bb7989cc9fb35d4bc875b9d6c7a02850",
+        "hash": "2199f49227f48f7eb8ec126b98c44c2bad0d5bb97f353747b914de3c7707d7c7"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 10,
+        "at": "2026-11-13T09:55:30.020Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 1,
+          "cards": {
+            "fixture:a": "QS",
+            "fixture:b": "JH"
+          },
+          "winners": [
+            "fixture:a"
+          ]
+        },
+        "previousHash": "2199f49227f48f7eb8ec126b98c44c2bad0d5bb97f353747b914de3c7707d7c7",
+        "hash": "feed474ffa0501182d3a90db20a5e75ab77498c151a96b8d0fecd8b6e10d8611"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 11,
+        "at": "2026-11-13T09:55:30.020Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "44a3e42ac7e78de708305f3722325bde0d056bb00fac735f305dc0c5053437cf"
+        },
+        "previousHash": "feed474ffa0501182d3a90db20a5e75ab77498c151a96b8d0fecd8b6e10d8611",
+        "hash": "44a9c794b9b406dcc3ab272318f65eaf6e028e7c486fd1c944fdc446435d4a3d"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 12,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "56ee0e81cc72df0c69a5195b90bdf1bd81cadffc4b18f46a4bddfd0f288f0015"
+        },
+        "previousHash": "44a9c794b9b406dcc3ab272318f65eaf6e028e7c486fd1c944fdc446435d4a3d",
+        "hash": "c8b9a5847f3498a5fd79cf1f1bbfeccd74590a927bdb559a4921df0afad50e31"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 13,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 2,
+          "cards": {
+            "fixture:a": "9S",
+            "fixture:b": "2C"
+          },
+          "winners": [
+            "fixture:a"
+          ]
+        },
+        "previousHash": "c8b9a5847f3498a5fd79cf1f1bbfeccd74590a927bdb559a4921df0afad50e31",
+        "hash": "e47f07ba7342218375becce77a9c02df6877f8794971bd6d4f79765513768a87"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 14,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "e521972c8bb6f2332c8d0a6945b566b29661b667481efd77275a51d024438fa3"
+        },
+        "previousHash": "e47f07ba7342218375becce77a9c02df6877f8794971bd6d4f79765513768a87",
+        "hash": "2dced0f3bf626ffa12fc11581c437969dac22eb36be4f45278f85b8e3d1f75e6"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 15,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "54cac50fb9b5c5ff9077f80cc34ee526793e31a5d7760c9a64dfa4cce7877a4e"
+        },
+        "previousHash": "2dced0f3bf626ffa12fc11581c437969dac22eb36be4f45278f85b8e3d1f75e6",
+        "hash": "cba3f5d92187fc321924e217280f7e8fd760189d219b8aeae4e17ae587e9c633"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 16,
+        "at": "2026-11-13T09:55:30.021Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 3,
+          "cards": {
+            "fixture:a": "AC",
+            "fixture:b": "AH"
+          },
+          "winners": [
+            "fixture:a",
+            "fixture:b"
+          ]
+        },
+        "previousHash": "cba3f5d92187fc321924e217280f7e8fd760189d219b8aeae4e17ae587e9c633",
+        "hash": "d4a6e04b320e8dfb37094dc4a1b4f3c89de5557281dac4c01bb74b50e7b1c3fd"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 17,
+        "at": "2026-11-13T09:55:30.022Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "fd2d4041c8a351256a3e59bf2fe5f725e403adad8e626990341111a499e93451"
+        },
+        "previousHash": "d4a6e04b320e8dfb37094dc4a1b4f3c89de5557281dac4c01bb74b50e7b1c3fd",
+        "hash": "b0778e9801a489845a142fe35ad5f97a4d190a5b5ff929a0073ee245d6289f03"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 18,
+        "at": "2026-11-13T09:55:30.022Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "74ffa36f08785d5c3a4c27a95f8ae9ee0acb04a161bb781fc9a67f970fafab4b"
+        },
+        "previousHash": "b0778e9801a489845a142fe35ad5f97a4d190a5b5ff929a0073ee245d6289f03",
+        "hash": "d9de0c5c45a019713c465b27df38ed654573068799212b97d1cb3b38f896d2dd"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 19,
+        "at": "2026-11-13T09:55:30.022Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 4,
+          "cards": {
+            "fixture:a": "9H",
+            "fixture:b": "10H"
+          },
+          "winners": [
+            "fixture:b"
+          ]
+        },
+        "previousHash": "d9de0c5c45a019713c465b27df38ed654573068799212b97d1cb3b38f896d2dd",
+        "hash": "72d63279623d4544db373f322e4105a88a1b95fac5e24dff99b827214d5be14b"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 20,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:a",
+        "type": "move.committed",
+        "data": {
+          "commitment": "7b16bf3bf08178b785a4bf4beef744cf399791490e83935a2d54b0fbde0fbf08"
+        },
+        "previousHash": "72d63279623d4544db373f322e4105a88a1b95fac5e24dff99b827214d5be14b",
+        "hash": "cfafce5332b31dd1d1f6955dc093a6fa3efe0b868df1f5a56a7582f5e7156ac3"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 21,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:b",
+        "type": "move.committed",
+        "data": {
+          "commitment": "b3f4236f4c5ebc614873e596910e8f9164934aba848db54d47f31b104f111687"
+        },
+        "previousHash": "cfafce5332b31dd1d1f6955dc093a6fa3efe0b868df1f5a56a7582f5e7156ac3",
+        "hash": "106b1ceac9559d3666280d5943c812409ec37bdcababdd4675d28b6eef24f2f8"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 22,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:b",
+        "type": "round.revealed",
+        "data": {
+          "round": 5,
+          "cards": {
+            "fixture:a": "KH",
+            "fixture:b": "7D"
+          },
+          "winners": [
+            "fixture:a"
+          ]
+        },
+        "previousHash": "106b1ceac9559d3666280d5943c812409ec37bdcababdd4675d28b6eef24f2f8",
+        "hash": "e98aeaa5eaebc8fe9df60c56f293545809fb49938f43ceb24ba87f35c2b07dbe"
+      },
+      {
+        "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+        "seq": 23,
+        "at": "2026-11-13T09:55:30.023Z",
+        "actor": "fixture:b",
+        "type": "game.finished",
+        "data": {
+          "scores": {
+            "fixture:a": 4,
+            "fixture:b": 2
+          }
+        },
+        "previousHash": "e98aeaa5eaebc8fe9df60c56f293545809fb49938f43ceb24ba87f35c2b07dbe",
+        "hash": "4e5e44ec36b79abccd388e65aaa2092efacb3a2cb0b7e488190ce4fe19188814"
+      }
+    ],
+    "decks": [
+      {
+        "commitment": "cd987158894d0ee012e83ae04d9cbfb012247336b768bf32d653d3e9bcb5484f",
+        "shuffleId": 1,
+        "proof": {
+          "protocol": "pastimer-deck-v1",
+          "roomId": "351d895f-788a-46d7-ab5f-cb4cfa07ffdb",
+          "shuffleId": 1,
+          "cards": [
+            "QS",
+            "JH",
+            "9S",
+            "2C",
+            "AC",
+            "AH",
+            "9H",
+            "10H",
+            "KH",
+            "7D",
+            "5S",
+            "4S",
+            "7H",
+            "AD",
+            "JC",
+            "KS",
+            "AS",
+            "8D",
+            "4H",
+            "10S",
+            "7C",
+            "10C",
+            "QD",
+            "3D",
+            "3S",
+            "3H",
+            "2S",
+            "6S",
+            "7S",
+            "3C",
+            "KC",
+            "JS",
+            "5C",
+            "JD",
+            "9C",
+            "KD",
+            "4C",
+            "6D",
+            "QH",
+            "8H",
+            "6C",
+            "5H",
+            "2D",
+            "4D",
+            "2H",
+            "5D",
+            "8C",
+            "9D",
+            "QC",
+            "6H",
+            "10D",
+            "8S"
+          ],
+          "salt": "796a9531d57d9b49d170d67e5cad7eb81731dfe565c5a582c65e73a329c9a476"
+        }
+      }
+    ],
+    "commands": [
+      {
+        "actor": "fixture:a",
+        "version": 5,
+        "action": {
+          "type": "play",
+          "card": "QS"
+        },
+        "salt": "488cccd9370f2698d858198658852d85032f5e651550fae306a5706fca7ef1fe"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 6,
+        "action": {
+          "type": "play",
+          "card": "JH"
+        },
+        "salt": "342f4502ac4e4a66f9b3f3daf278ca5ac02e59b01b5cfaeadb9caa950cb85899"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 7,
+        "action": {
+          "type": "play",
+          "card": "9S"
+        },
+        "salt": "7bda164c2fd071702c71e4e66fd0fee97916e29a9a439d357ae51f6e6badb7d9"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 8,
+        "action": {
+          "type": "play",
+          "card": "2C"
+        },
+        "salt": "174c148f058e98ec61f407b464a1c20f446b3fa546bb946232d54b136603729e"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 9,
+        "action": {
+          "type": "play",
+          "card": "AC"
+        },
+        "salt": "3b0aaefa7c61d5752fae077aebee91a5d4b1b18302d519c027eb5519d3332eac"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 10,
+        "action": {
+          "type": "play",
+          "card": "AH"
+        },
+        "salt": "3be5458add03302c11dbdd7ccdca216cf72e189f2b638bca994d5f6773c5780f"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 11,
+        "action": {
+          "type": "play",
+          "card": "9H"
+        },
+        "salt": "4112ebd0851c7311580c54362ead189d143b4b5980e4ffaab82b1a41a9007cc1"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 12,
+        "action": {
+          "type": "play",
+          "card": "10H"
+        },
+        "salt": "c96aa4f56a53502d445b7732f640862a97c07ce64badbe670d1dfb581af17bcc"
+      },
+      {
+        "actor": "fixture:a",
+        "version": 13,
+        "action": {
+          "type": "play",
+          "card": "KH"
+        },
+        "salt": "bf2bd8f3ad8c9b977b10d5c77540cb4beaf902815e29535ef9260e89ca17c208"
+      },
+      {
+        "actor": "fixture:b",
+        "version": 14,
+        "action": {
+          "type": "play",
+          "card": "7D"
+        },
+        "salt": "83a733a2626653a9850c48ae39fdb98778e456bb5452be912576cf9d3b752079"
+      }
+    ]
+  },
+  "startReceipt": {
+    "actor": "fixture:a",
+    "requestId": "a91f2e63-bd2c-4620-a044-1090826c9b1b",
+    "version": 2,
+    "fingerprint": "4c4a48d7a1dd2315d401bef26b4ad4e6381cf63cc5409f81c031eff921d93d98"
+  }
+}
