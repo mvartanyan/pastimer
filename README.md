@@ -109,3 +109,13 @@ cargo run --locked --bin verify-audit -- pastimer-XXXXXXXX.json
 ```
 
 Thousand exports `pastimer-audit-v2`: initial deck order and salt for every settled deal, all card movements, tricks, public rule events, sealed-command reveals, score checkpoints and cancellations. The current unfinished deal stays private. The verifier checks hashes and browser receipts, reconstructs card ownership and legal tricks, and replays the revealed auction/play actions and scoring. Existing `pastimer-audit-v1` demo exports remain supported. Preserve receipts outside the server; the trust document describes the remaining limits against a dishonest operator.
+
+Horse/k3s container, persistent-volume manifests and BotFather instructions: [deployment guide](docs/deployment.md).
+
+Generate mobile Mini App previews with signed test Telegram identities (no real bot token needed):
+
+```sh
+node scripts/capture-screenshots.mjs
+```
+
+The helper starts an isolated server, drives real game actions, and writes bidding, distribution, trick-play and collected-trick views to `artifacts/screenshots/`. These are browser previews, not captures from a live Telegram client.

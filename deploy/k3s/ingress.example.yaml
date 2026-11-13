@@ -1,0 +1,25 @@
+# Copy and fill using Horse's existing ingress class and certificate configuration.
+# Not included in the base kustomization: never apply an invented public hostname.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pastimer
+  namespace: pastimer
+  # Add the cluster's existing certificate issuer annotation if applicable.
+spec:
+  # ingressClassName: <Horse ingress class>
+  tls:
+    - hosts:
+        - pastimer.example.com
+      secretName: pastimer-tls
+  rules:
+    - host: pastimer.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pastimer
+                port:
+                  name: http

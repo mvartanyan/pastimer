@@ -40,6 +40,7 @@ try{
       for(let i=0;i<24;i++){
         room=await read(host);const page=byId.get(room.table.turn);assert.ok(page,'Turn belongs to a player');
         if(i===0)await page.route('**/api/rooms/*/commands',async route=>{await route.fetch();await route.abort();},{times:1});
+        await page.getByRole('button',{name:'Play selected card',exact:true}).waitFor();
         await page.locator('#hand .card:not(:disabled)').first().click();await act(page,page.getByRole('button',{name:'Play selected card',exact:true}));
         if(i===0){await page.getByRole('button',{name:'Retry previous move'}).waitFor();await page.reload();await page.getByRole('button',{name:'Retry previous move'}).click();await page.getByRole('button',{name:'Retry previous move'}).waitFor({state:'hidden'});}
         if(i%3===2){
