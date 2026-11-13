@@ -51,6 +51,7 @@ pub fn router(store: Store, config: Config) -> Result<Router> {
     Ok(Router::new()
         .route("/",get(||async{([(header::CONTENT_TYPE,"text/html; charset=utf-8")],include_str!("../public/index.html"))}))
         .route("/app.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/app.js"))}))
+        .route("/cards.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/cards.js"))}))
         .route("/thousand.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/thousand.js"))}))
         .route("/style.css",get(||async{([(header::CONTENT_TYPE,"text/css")],include_str!("../public/style.css"))}))
         .route("/api/health",get(||async{Json(json!({"ok":true}))}))

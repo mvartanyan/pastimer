@@ -21,8 +21,9 @@ try{
       await page.getByLabel('Your name').fill(`Player ${i+1}`);await page.getByRole('button',{name:'Continue locally'}).click();await page.getByRole('button',{name:'Create a table'}).waitFor();
       const me=await page.evaluate(async()=>await(await fetch('/api/me')).json());byId.set(me.id,page);
     }
-    const host=pages[0];await host.locator('select[name=playerCount]').selectOption(String(count));await host.getByRole('button',{name:'Create a table'}).click();await host.locator('#room-code').waitFor({state:'visible'});const code=await host.locator('#room-code').textContent();
+    const host=pages[0];await contexts[0].grantPermissions(['clipboard-read','clipboard-write'],{origin:base});await host.locator('select[name=playerCount]').selectOption(String(count));await host.getByRole('button',{name:'Create a table'}).click();await host.locator('#room-code').waitFor({state:'visible'});const code=await host.locator('#room-code').textContent();
     for(const page of pages.slice(1)){await page.getByLabel('Table code').fill(code);await page.getByRole('button',{name:'Join table'}).click();await page.locator('#room').waitFor({state:'visible'});}
+    await host.getByRole('button',{name:'Copy invitation code',exact:true}).click();assert.equal(await host.evaluate(()=>navigator.clipboard.readText()),code);
     const read=async page=>await page.evaluate(async code=>await(await fetch(`/api/rooms/${code}`)).json(),code);
     const act=async(page,locator)=>{await locator.waitFor();const version=Number(await page.locator('#room').getAttribute('data-version'));await locator.click();await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>v,version);};
     await host.getByRole('button',{name:'Start game'}).waitFor({state:'visible'});await act(host,host.getByRole('button',{name:'Start game'}));let room=await read(host);const dealer=byId.get(room.table.dealer);
@@ -32,6 +33,14 @@ try{
       const page=byId.get(room.table.turn);await act(page,count===4&&auctionSteps===1?page.getByRole('button',{name:/Here ·/}):page.getByRole('button',{name:'Pass',exact:true}));auctionSteps++;room=await read(host);
     }
     const owner=byId.get(room.table.contractor);await act(owner,owner.getByRole('button',{name:'Take stock',exact:true}));
+    assert.equal(await owner.locator('#hand .card svg').count(),10);
+    await owner.getByRole('button',{name:'Sort hand by rank',exact:true}).click();
+    await owner.getByRole('button',{name:'Sort hand by suit',exact:true}).waitFor();
+    const choices=owner.locator('.transfer-row select');const first=await choices.nth(0).inputValue(),second=await choices.nth(1).inputValue();
+    await choices.nth(1).selectOption(first);assert.equal(await owner.getByRole('button',{name:'Give cards',exact:true}).isDisabled(),true);
+    await choices.nth(1).selectOption(second);assert.equal(await owner.getByRole('button',{name:'Give cards',exact:true}).isEnabled(),true);
+    for(let i=0;i<2;i++)assert.equal(await owner.locator('.transfer-preview .playing-card').nth(i).getAttribute('data-card'),await choices.nth(i).inputValue());
+    assert.equal(await owner.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'Mobile layout must not overflow horizontally');
     await owner.getByLabel('Give openly').first().check();await act(owner,owner.getByRole('button',{name:'Give cards',exact:true}));
     if(count===4){
       await act(owner,owner.getByRole('button',{name:'Take a stick · палочка',exact:true}));room=await read(host);assert.equal(room.table.lastDeal.status,'dismissed');

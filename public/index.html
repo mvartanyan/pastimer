@@ -1,11 +1,30 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Pastimer · Card room</title><link rel="stylesheet" href="/style.css"><script src="https://telegram.org/js/telegram-web-app.js"></script><script type="module" src="/app.js"></script></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101e28"><title>Pastimer · The card table</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script><script type="module" src="/app.js"></script>
+</head>
 <body><main>
-<header><div class="brand">♠ PASTIMER</div><span id="identity">Your next table awaits</span></header>
-<section class="intro"><span class="eyebrow">A place to play together</span><h1>Good company.<br>One more hand.</h1><p>Private tables, shared scores, and a record of every move.</p></section>
-<p id="notice" role="status" aria-live="polite"></p>
-<section id="login" class="panel" hidden><h2>Take a seat</h2><p>Open in Telegram to sign in, or use local development login below.</p><form id="login-form"><label>Your name<input name="name" maxlength="80" required autocomplete="nickname"></label><button>Continue locally</button></form></section>
-<section id="lobby" class="grid" hidden><div class="panel"><span class="eyebrow">Start something</span><h2>Your table, your people</h2><p>Play Тысяча with your house rules. Invite three or four friends to a private table.</p><form id="create-form"><label>Game<select name="game" id="games"></select></label><div id="thousand-settings"><label>Players<select name="playerCount"><option value="3">3 players</option><option value="4">4 players</option></select></label><label>Barrel threshold<input name="barrelThreshold" type="number" min="620" max="900" step="5" value="900" required></label></div><button>Create a table</button></form></div><div class="panel"><span class="eyebrow">Already invited?</span><h2>Join your friends</h2><form id="join-form"><label>Table code<input name="code" pattern="[A-Za-z2-9]{8}" maxlength="8" placeholder="8-letter code" required autocomplete="off"></label><button class="secondary">Join table</button></form></div></section>
-<section id="room" hidden><div class="room-heading"><div><span class="eyebrow">Your private table</span><h2 id="room-code"></h2></div><button id="back" class="secondary">Lobby</button></div><div id="seats" class="seats"></div><div class="panel felt"><p id="phase"></p><div id="table-actions"></div><div id="thousand-table" hidden></div><h3>Your hand</h3><div id="hand" class="hand" aria-label="Your cards"></div><div id="game-actions"></div></div><div id="trick-piles" hidden></div><details class="panel"><summary>Deck integrity & move log</summary><p>For Тысяча the deck hash is published before dealing. Each finished or cancelled deal has a complete audit record.</p><pre id="commitment"></pre><p id="receipt"></p><button id="audit" class="secondary">Download audit record</button><p>Save receipts during play to detect rewritten history. Commitments do not prove an unbiased server shuffle.</p></details></section>
-<footer>Built for a little friendly competition.</footer>
+  <header class="app-header"><a class="brand" href="/" aria-label="Pastimer home"><span class="brand-mark">♠</span> PASTIMER</a><span id="identity">A seat is waiting</span></header>
+  <section class="intro"><span class="eyebrow">Cards. Friends. One more round.</span><h1>Meet at<br>the table.</h1><p>A private card room for your kind of Тысяча.</p><div class="intro-deck" aria-hidden="true"><span>♣</span><span>♦</span><span>♠</span></div></section>
+  <p id="notice" role="status" aria-live="polite"></p>
+  <section id="login" class="panel" hidden><span class="eyebrow">Welcome to the club</span><h2>Take a seat</h2><p>Open in Telegram to join your friends, or sign in locally for development.</p><form id="login-form"><label>Your name<input name="name" maxlength="80" required autocomplete="nickname"></label><button>Continue locally</button></form></section>
+  <section id="lobby" class="grid" hidden>
+    <div class="panel lobby-card"><span class="eyebrow">Your rules. Your table.</span><h2>Deal your friends in.</h2><form id="create-form"><label>Game<select name="game" id="games"></select></label><div id="thousand-settings" class="settings-grid"><label>Players<select name="playerCount"><option value="3">3 players</option><option value="4">4 players</option></select></label><label>Barrel threshold<input name="barrelThreshold" type="number" min="620" max="900" step="5" value="900" required></label></div><button>Create a table</button></form></div>
+    <div class="panel lobby-card join-card"><span class="eyebrow">Have an invitation?</span><h2>Pull up a chair.</h2><form id="join-form"><label>Table code<input name="code" pattern="[A-Za-z2-9]{8}" maxlength="8" placeholder="Your 8-character code" required autocomplete="off"></label><button class="secondary">Join table</button></form><p class="small-note">Share a code. Keep the company close.</p></div>
+  </section>
+  <section id="room" hidden>
+    <div class="room-heading"><div><span class="eyebrow" id="game-title">PRIVATE TABLE</span><button id="copy-code" class="room-code-button" aria-label="Copy invitation code"><span id="room-code"></span><span class="copy-icon" aria-hidden="true">⧉</span></button></div><button id="back" class="icon-button secondary">Lobby <svg class="arrow-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M4 4H12V12"/></svg></button></div>
+    <div class="phase-bar"><span class="phase-light" aria-hidden="true"></span><p id="phase" role="status" aria-live="polite"></p><span id="deal-badge" class="deal-badge"></span></div>
+    <div class="table-shell">
+      <div class="table-rail"><div class="felt" id="table-surface"><div class="felt-line"></div><div id="seats" class="seats"></div><div id="thousand-table" hidden></div><div id="table-actions"></div></div></div>
+      <section id="hand-zone" class="hand-zone"><div class="hand-heading"><h3>Your hand <span id="hand-count"></span></h3><button id="sort-hand" class="text-button" aria-label="Sort hand by rank">↕ Sorted by suit</button></div><div id="hand" class="hand" aria-label="Your cards"></div></section>
+      <div id="game-actions" class="action-dock"></div>
+    </div>
+    <div id="trick-piles" hidden></div>
+    <details id="integrity" class="integrity-panel"><summary><span class="integrity-dot" aria-hidden="true"></span>Deck & game record<span class="integrity-hint">View proof <svg class="arrow-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M4 4H12V12"/></svg></span></summary><div class="integrity-body"><p>The deck hash is published before dealing. Each completed or cancelled deal can be verified.</p><pre id="commitment"></pre><p id="receipt"></p><button id="audit" class="secondary">Download audit record</button><p class="small-note">Keep your receipts to check that the recorded history matches what you saw.</p></div></details>
+  </section>
+  <footer>A little friendly competition. <span>♠ ♥ ♣ ♦</span></footer>
 </main></body></html>

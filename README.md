@@ -27,6 +27,8 @@ Use separate browser profiles for different local players. Choose Тысяча, 
 
 The older high-card demo retains its original acknowledgement workflow for compatibility. Its five rounds award a point for the highest rank, including ties.
 
+The shared interface uses a felt card table, illustrated vector playing cards and an overlapping hand that sorts by suit or rank. Seats highlight the current player; stock transfers preview the chosen cards and prevent duplicate selections. Card artwork is bundled locally and scales to mobile and desktop displays.
+
 `DEV_AUTH=1` allows loopback-only login and is forbidden in production. Every local sign-in creates a new identity; the cookie preserves it for one day. `.env.example` documents configuration; environment files are not automatically loaded. `PASTIMER_ENV=production` enables production behavior; the previous `NODE_ENV=production` spelling is also accepted for compatibility. Supply real secrets through the deployment's environment, never a committed file.
 
 SQLite defaults to `.data/pastimer.sqlite`, ignored by Git. Use a persistent private volume; stop the application before copying database files or use SQLite's online backup API. Preserve WAL files when appropriate. The Rust backend reads the original Node prototype's room snapshots, sessions and command receipts without resetting the database. A captured Node fixture tests persisted-state and cryptographic compatibility. Do not run both versions as writers during a migration.
