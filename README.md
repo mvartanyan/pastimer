@@ -2,7 +2,7 @@
 
 A Rust server for multiplayer Telegram card games, with SQLite persistence and a shared Mini App. **Thousand / тысяча is the first complete game**, with the agreed house rules for three or four players. See the [English rules](docs/thousand-rules.md) or [русские правила](docs/thousand-rules.ru.md). `high-card-demo` is a five-round infrastructure exercise for 2–4 players.
 
-Live deployment: [1000.vartanyan.com](https://1000.vartanyan.com). Open [@pastimerbot](https://t.me/pastimerbot) in Telegram and use `Play / Играть` for signed Mini App access. [Horse deployment and verification record](docs/horse-computers-2026-11-14.md).
+Live deployment: [1000.vartanyan.com](https://1000.vartanyan.com). Open [@pastimerbot](https://t.me/pastimerbot) in Telegram and use `Play / Играть` for signed Mini App access. [Horse deployment and verification record](docs/horse-gameplay-2026-11-14.md).
 
 Starting a new session? Read the [handoff](docs/handoff.md) for implementation status, source map, local setup, validation and the live Horse deployment record. [AGENTS.md](AGENTS.md) records project conventions; the [screenshot gallery](docs/screenshots/README.md) shows the current UI.
 

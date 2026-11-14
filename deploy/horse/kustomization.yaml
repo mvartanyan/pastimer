@@ -7,7 +7,7 @@ resources:
 images:
   - name: pastimer
     newName: docker.io/library/pastimer
-    newTag: commit-fe12ef5981f88f2cb99136442fe2db0d2a882d0f-amd64
+    newTag: commit-5517348481d3cab2afddc221e0ba3798d38762cf-amd64
 patches:
   - target:
       kind: PersistentVolumeClaim
