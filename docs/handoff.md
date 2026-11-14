@@ -1,10 +1,12 @@
 # Local-session handoff
 
-Updated 2026-11-14. Repository: `mvartanyan/pastimer`, branch `main`.
+Updated 2026-11-14. Repository: `mvartanyan/pastimer`. Local Horse continuation: branch `codex/horse-deployment`; pulled `main` at `6376528`.
 
 ## Where the work stands
 
-The Rust multiplayer platform, the owner's complete Thousand rules, audit verifier and redesigned card-table UI are implemented and committed. The next intended operational step is deploying to **Horse**, using the owner's existing local **k3s horse** project, and connecting a Telegram bot. Horse deployment has **not** been performed or verified from this cloud session. There is no chosen public domain or confirmed bot configuration in this repository.
+The Rust multiplayer platform, the owner's complete Thousand rules, audit verifier and redesigned card-table UI are implemented. **Pastimer is deployed and verified on Horse at https://1000.vartanyan.com**, using the established local `/Users/michael/dev/k3s-horse` setup. [@pastimerbot](https://t.me/pastimerbot) has a verified default `Play / Играть` menu button pointing to that origin.
+
+The running application source is `f3fe9a915567163acf0c7ec71047002c51377a91`. The live three-player browser deal, deployed audit verifier, production authentication restrictions, HTTPS, asset hashes and persistence across pod replacement pass. The browser uses signed synthetic Telegram identities; actual Telegram-client identity and multiplayer acceptance remain a separate check. See [the Horse deployment record](horse-2026-11-14.md) for image digests, backups and operating details.
 
 Relevant implementation commits:
 
@@ -12,6 +14,7 @@ Relevant implementation commits:
 - `5dbc456` — container/k3s preparation, deployment instructions and screenshot capture helper.
 - `ba4ac97` — illustrated playing cards and redesigned mobile card-table UI, with browser checks for sorting, clipboard invitation codes and transfer previews/duplicate prevention.
 - `0516a91` — keep local card selection responsive during background refresh, with a regression check that holds the refresh response open.
+- `f3fe9a9` - keep submitted actions responsive during background refresh and reject stale room snapshots; local regression and live Horse validation passed.
 
 This handoff, root `AGENTS.md` and the checked-in screenshot gallery provide context without needing the cloud conversation. The sidebar placement of a chat has no bearing on the Git commits available to a local checkout.
 
@@ -99,7 +102,7 @@ npm run test:browser
 
 The Rust suite has 30 tests covering complete deals/matches, the attainable 380-point maximum, barrel behavior, sticks, privacy, rollback, four nines, per-player trick piles, restart recovery, rule replay, proof tampering, command races, retry idempotency, Telegram signatures and legacy compatibility. Browser checks cover the demo, full three-player Thousand play with real three-second closure, four-player here bidding/mixed-visibility distribution/dismissal, audit verification, reload/retry, card rendering, sorting, clipboard copying, mobile overflow and card selection during an in-flight refresh.
 
-Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. Native local-platform and real Telegram/HTTPS behavior still need verification in the target environment.
+Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; actual Telegram-client acceptance remains pending. See [the deployment record](horse-2026-11-14.md).
 
 To verify a downloaded audit independently:
 
@@ -107,20 +110,29 @@ To verify a downloaded audit independently:
 cargo run --locked --bin verify-audit -- path/to/pastimer-XXXXXXXX.json
 ```
 
-## Remaining work: Horse and Telegram
+## Horse continuation completed locally
 
-The owner requested commit/push, Horse deployment, bot connection instructions and game screenshots. Source, instructions and browser screenshots are delivered. The operational deployment and real Telegram validation remain pending.
+The local continuation pulled `main`, preserved the pre-existing untracked root `thousand-rules.ru.md`, and read the local k3s project, SSH configuration and live cluster. Horse is a single amd64 node using its existing Traefik ingress, `letsencrypt-prod` issuer and `local-path` storage. The owner chose `1000.vartanyan.com` and supplied the bot token in an ignored local `.env`, now mode 0600. Credentials were installed as Secret `pastimer-telegram`, key `bot-token`, without being printed or committed.
 
-**Horse is an existing configured SSH server.** The owner specifically directed using the separate **k3s horse** project for its established setup. That local project, SSH credentials and kubeconfig were unavailable to the cloud task. A local session should inspect them before asking the owner to supply information already present there. Do not infer Horse's domain, ingress class, certificate issuer, storage class, CPU architecture or Kubernetes context from placeholder manifests.
+Production has one replica, Recreate updates and the bound 5Gi `pastimer-data` PVC. The canonical [Horse overlay](../deploy/horse/) and the rendered local `/Users/michael/dev/k3s-horse/pastimer/pastimer.yaml` describe the actual deployment. Do not delete or replace the PVC for updates.
 
-Suggested sequence, using [deployment.md](deployment.md) for commands:
+The original Colima/QEMU image build failed in the linker. The image was then built natively on Horse from a Git source archive with a temporary, separate `pastimer-build` containerd namespace. The initial live browser game exposed Play clicks being swallowed by the shared background-refresh guard. Commit `f3fe9a9` fixes that race and stale-response rollback, with a failing-before/passing-after regression. The full browser suites passed against the final commit. The corrected image was rebuilt, imported into the existing k3s image store and rolled out with the same database.
 
-1. Locate the local `k3s horse` project and read its own instructions. Inspect the existing `horse` SSH alias and intended Kubernetes context; establish what is already deployed and whether Pastimer has existing data/resources.
-2. Confirm the target architecture, public HTTPS hostname, ingress/certificate arrangement and persistent storage. Use the existing cluster conventions rather than installing replacement infrastructure.
-3. Build the latest immutable image/tag for Horse's architecture, transfer/import it or use the established registry, and set the deployment to that exact image. The checked-in `pastimer:horse` tag is a starting value.
-4. Supply the real bot token securely as Secret `pastimer-telegram`, key `bot-token`. Production needs `PASTIMER_ENV=production`, with `DEV_AUTH` unset. There is no bot webhook or update-polling worker; all interaction is in the Mini App.
-5. Deploy one SQLite writer with the existing Recreate strategy and persistent PVC. Preserve any existing database with a consistent backup. The ingress example is deliberately excluded from the base kustomization until its real values are supplied.
-6. Configure BotFather's menu button with the same-origin HTTPS root URL. Validate actual Telegram identities, multiplayer joining/play, persistence across restart, TLS and completed-deal audit export. A passing health probe alone does not establish those flows.
-7. Record the resulting URL, image reference, deployment commands and checks in this repository without committing secrets or local credentials.
+Live checks passed:
 
-The cloud workspace is development infrastructure. No local SSH keys or production secrets have been committed. Kubernetes token/identity setup is documented in [deployment.md](deployment.md); the local session should use the owner's available authorized configuration.
+- Public health and game catalogue, trusted HTTPS and HTTP redirect.
+- All five embedded frontend assets match the deployed source byte-for-byte.
+- Local login, invalid Telegram signatures and cross-origin writes are rejected in production. Session cookies are Secure, HttpOnly and SameSite=Strict.
+- Three signed synthetic identities joined and completed a full Thousand deal through independent browsers. The deployed verifier accepted its audit: one deal, one deck, 87 events and 30 moves.
+- After a consistent SQLite backup and actual pod replacement, all three sessions, the room, completed deal and exact exported audit survived unchanged.
+- The replacement pod is Ready, running the expected image/config ID with zero restarts. The TLS certificate is Ready.
+- Telegram's default menu button was set and verified directly from Horse. No webhook or polling worker was added.
+
+Consistent backups with successful SQLite integrity checks are on Horse:
+
+- `/var/backups/pastimer/pastimer-20261114-pre-refresh-fix.sqlite`
+- `/var/backups/pastimer/pastimer-20261114-pre-restart.sqlite`
+
+The prior image and build archives are retained for rollback. The temporary native builder is stopped, with no build tasks left running. Colima's unused failed-build cache was pruned (2.335GB); containers and volumes remained at zero, guest fstrim ran, temporary VM DNS was restored and `dotint-build` returned to Stopped. The original Docker context remains `colima`.
+
+Remaining acceptance: open [@pastimerbot](https://t.me/pastimerbot) in actual Telegram, press Start and `Play / Играть`, confirm the signed-in identity, then join/play from other Telegram accounts. Synthetic identities do not establish that real-client check. A Main Mini App/profile launch button is optional and separate from the configured menu button. Scheduled/off-host database backups are not established by this initial deployment.
