@@ -48,23 +48,40 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
   for(const page of pages) await page.locator('#hand .card').first().waitFor();
   assert.equal(await a.locator('#hand .card').count(),5);
   await a.screenshot({path:'/tmp/pastimer-mobile.png',fullPage:true});
-  // Hold a background refresh open: local card selection must still respond to a tap.
-  let releaseRefresh,markRefreshStarted;
+  // A held background refresh must not swallow selection or the submitted move.
+  let releaseRefresh,markRefreshStarted,markRefreshDelivered;
   const refreshHeld=new Promise(resolve=>{releaseRefresh=resolve;});
   const refreshStarted=new Promise(resolve=>{markRefreshStarted=resolve;});
+  const refreshDelivered=new Promise(resolve=>{markRefreshDelivered=resolve;});
   await a.route(`${base}/api/rooms/${code}`,async route=>{
-    const response=await route.fetch();markRefreshStarted();await refreshHeld;await route.fulfill({response});
+    const response=await route.fetch();markRefreshStarted();await refreshHeld;await route.fulfill({response});markRefreshDelivered();
   },{times:1});
   await refreshStarted;
   try{
     await a.locator('#hand .card').first().click();
     assert.equal(await a.locator('#hand .card').first().getAttribute('aria-pressed'),'true','Card selection must work during a background refresh');
     assert.equal(await a.getByRole('button',{name:'Play selected card'}).isEnabled(),true);
+    await a.getByRole('button',{name:'Play selected card'}).click();
+    await a.waitForFunction(()=>document.querySelectorAll('#hand .card').length===4,null,{timeout:5000});
   }finally{releaseRefresh();}
+  // The refresh carries the pre-move snapshot; it must not restore the played card.
+  await refreshDelivered;
+  await a.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await a.locator('#hand .card').count(),4);
   for(let round=0;round<5;round++){
     for(const page of pages){
-      const loseResponse=round===0 && page===a;
-      if(loseResponse) await page.route('**/api/rooms/*/commands',async route=>{await route.fetch();await route.abort();},{times:1});
+      if(round===0 && page===a)continue; // Played while the refresh was held above.
+      const loseResponse=round===0 && page===b;
+      if(loseResponse){
+        // Preserve version-conflict responses; lose only a move that actually committed.
+        const pattern='**/api/rooms/*/commands';
+        const loseCommittedResponse=async route=>{
+          const response=await route.fetch();
+          if(response.ok()){await route.abort();await page.unroute(pattern,loseCommittedResponse);}
+          else await route.fulfill({response});
+        };
+        await page.route(pattern,loseCommittedResponse);
+      }
       await page.locator('#hand .card').first().click();
       await page.getByRole('button',{name:'Play selected card'}).click();
       try { await page.waitForFunction(expected=>document.querySelectorAll('#hand .card').length===expected,4-round,{timeout:10000}); } catch(e) {console.log('NOTICE',await page.locator('#notice').textContent());await page.screenshot({path:'/tmp/pastimer-failure.png',fullPage:true});throw e;}

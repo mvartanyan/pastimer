@@ -1,7 +1,7 @@
 import {renderThousand,clearThousand} from '/thousand.js';
 import {playingCard,cardBack,sortedHand,layoutHand} from '/cards.js';
 const $ = id => document.getElementById(id);
-let me, room, selected, busy = false;
+let me, room, selected, busy = false, refreshing = false;
 let sortMode=localStorage.getItem('pastimer-hand-sort')??'suit';
 let pending = JSON.parse(sessionStorage.getItem('pending-command') || 'null');
 function setPending(value) { pending=value; if(value) sessionStorage.setItem('pending-command',JSON.stringify(value)); else sessionStorage.removeItem('pending-command'); }
@@ -58,6 +58,7 @@ function renderSeats(){
   }));
 }
 function render(next) {
+  if(room?.code===next.code && next.version<room.version)next=room;
   if(room?.table?.deal!==next.table?.deal||!next.table?.hand?.includes(selected))selected=undefined;
   room=next;document.body.classList.add('in-room');
   $('room').dataset.phase=room.table?.phase??room.phase;$('room').dataset.version=String(room.version);$('room').dataset.game=room.game;
@@ -77,7 +78,7 @@ function render(next) {
   if(room.phase==='playing')for(const action of room.table?.actions??[]){const e=button(action.label,()=>command({type:action.type,...(action.input==='card'?{card:selected}:{})}));e.disabled=action.input==='card'&&!selected;$('game-actions').append(e);}
   $('commitment').textContent=room.deck?`Shuffle ${room.deck.shuffleId}\nSHA-256 ${room.deck.commitment}`:'The deck hash will appear before dealing.';
   if(room.table?.kind==='thousand'){
-    renderThousand({room,me,selected,send:action=>command({type:'thousand',action}),refresh:()=>run(refreshRoom),run});
+    renderThousand({room,me,selected,send:action=>command({type:'thousand',action}),refresh:refreshRoom,run});
     if(room.table.phase==='trick')for(const card of $('hand').children){card.disabled=!room.table.controls.legalCards.includes(card.dataset.card);card.classList.toggle('is-unplayable',room.table.turn===me.id&&card.disabled);}
     $('commitment').textContent=room.deck?`Deal ${room.table.deal} · SHA-256 ${room.deck.commitment}`:'The dealer will publish the deck hash before dealing.';
   }else{
@@ -111,5 +112,11 @@ await run(async()=>{
   }
   const previous=sessionStorage.getItem('room'); if(previous) render(await api(`/rooms/${previous}`));
 });
-async function refreshRoom(){if(!room)return;const code=room.code;const next=await api(`/rooms/${code}`);if(room?.code===code&&next.version!==room.version)render(next);}
-setInterval(()=>{if(room&&!busy)run(refreshRoom);},1000);
+async function refreshRoom(){
+  if(!room||busy||refreshing)return;
+  refreshing=true;
+  try{const code=room.code;const next=await api(`/rooms/${code}`);if(room?.code===code&&next.version>room.version)render(next);}
+  catch(e){notice(e.message);}
+  finally{refreshing=false;}
+}
+setInterval(refreshRoom,1000);
