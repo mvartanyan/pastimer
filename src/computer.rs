@@ -191,6 +191,9 @@ mod tests {
     }
     fn view(hand: Vec<Card>) -> View {
         View {
+            trick_leader: None,
+            trick_winner: None,
+            announcing_card: None,
             kind: "thousand",
             phase: "trick",
             deal: 1,

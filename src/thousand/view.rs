@@ -19,6 +19,9 @@ pub struct View {
     pub piles: Vec<PileView>,
     pub plays: Vec<Play>,
     pub close_at: Option<i64>,
+    pub trick_leader: Option<String>,
+    pub trick_winner: Option<String>,
+    pub announcing_card: Option<Card>,
     pub server_now: i64,
     pub controls: Controls,
     pub transfers: Vec<Transfer>,
@@ -135,10 +138,28 @@ impl State {
             Phase::Closing { trick, close_at } => (trick.plays.clone(), Some(*close_at)),
             _ => (vec![], None),
         };
+        let trick_leader = plays.first().map(|p| p.player.clone()).or_else(|| {
+            matches!(self.phase, Phase::Trick { .. })
+                .then(|| turn.clone())
+                .flatten()
+        });
+        let trick_winner = match &self.phase {
+            Phase::Closing { trick, .. } => Some(trick.winner.clone()),
+            _ => None,
+        };
+        let number = self.tricks.len() + 1;
+        let announcing_card = plays
+            .first()
+            .filter(|play| {
+                self.marriages
+                    .iter()
+                    .any(|m| usize::from(m.trick) == number && m.player == play.player)
+            })
+            .map(|play| play.card.clone());
         View{kind:"thousand",phase:self.phase.name(),deal:self.deal,dealer:players.get(self.dealer).map(|p|p.id.clone()).unwrap_or_default(),contractor:self.contractor.and_then(|p|players.get(p)).map(|p|p.id.clone()),order:self.order,compulsory:self.compulsory,
             turn,hand:self.hands.get(viewer).cloned().unwrap_or_default(),stock:self.stock_visible.then(||self.stock.clone()),stock_taken:self.stock_taken,trump:self.trump,
             seats:players.iter().enumerate().map(|(i,p)|SeatView{player:p.clone(),count:self.hands.get(&p.id).map_or(0,Vec::len),score:self.ledger.get(&p.id),sticks:self.sticks.get(&p.id).copied().unwrap_or(0),on_barrel:self.ledger.get(&p.id)==i64::from(self.settings.barrel_threshold),round_points:self.raw.get(&p.id).copied().unwrap_or(0),role:if players.len()==4&&i==self.dealer{"dealer"}else if self.contractor==Some(i){"contractor"}else{"player"}}).collect(),
-            piles:players.iter().map(|p|PileView{player:p.id.clone(),count:self.tricks.iter().filter(|t|t.winner==p.id).count(),top:self.tricks.iter().rev().find(|t|t.winner==p.id).cloned()}).collect(),plays,close_at,server_now:now,controls,
+            piles:players.iter().map(|p|PileView{player:p.id.clone(),count:self.tricks.iter().filter(|t|t.winner==p.id).count(),top:self.tricks.iter().rev().find(|t|t.winner==p.id).cloned()}).collect(),plays,close_at,trick_leader,trick_winner,announcing_card,server_now:now,controls,
             transfers:self.movements.iter().filter_map(|m|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to)&& (m.public||from==viewer||to==viewer){return Some(Transfer{player:to.clone(),card:m.card.clone(),public:m.public})}None}).collect(),
             deliveries:self.movements.iter().enumerate().filter_map(|(id,m)|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to){Some(Delivery{id,from:from.clone(),to:to.clone(),public:m.public,card:(m.public||from==viewer||to==viewer).then(||m.card.clone())})}else{None}}).collect(),
             played_cards:self.movements.iter().filter(|m|matches!(m.to,Zone::Table{..})).map(|m|m.card.clone()).collect(),

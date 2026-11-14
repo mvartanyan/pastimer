@@ -11,7 +11,8 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | A completed trick before its three-second collection | [03-playing-a-trick.png](03-playing-a-trick.png) |
 | Last captured trick opened from a player seat | [04-collected-tricks.png](04-collected-tricks.png) |
 | Highlighted secret receipt with no instructional text | [05-incoming-card.png](05-incoming-card.png) |
-| Prominent hearts trump with crossed gold rings (UI fixture) | [06-hearts-trump.png](06-hearts-trump.png) |
+| Top-view rings, marriage card and centred trump (UI fixture) | [06-hearts-trump.png](06-hearts-trump.png) |
+| Cards by owner, leader and trick winner highlighted (UI fixture) | [07-trick-owners.png](07-trick-owners.png) |
 
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 

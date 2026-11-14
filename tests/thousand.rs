@@ -138,11 +138,21 @@ async fn http_engine_plays_and_verifies_a_deal_without_acknowledgements() -> Tes
             )
             .await?;
             if room["table"]["phase"] == "closing" {
+                assert_eq!(
+                    room["table"]["trickLeader"],
+                    room["table"]["plays"][0]["player"]
+                );
+                let winner = room["table"]["trickWinner"].clone();
+                assert!(winner.is_string());
                 let close_at = room["table"]["closeAt"].as_i64().ok_or("deadline")?;
                 e.advance_at(&code, "p0", close_at - 1).await?;
                 assert_eq!(e.read(&code, "p0").await?["table"]["phase"], "closing");
                 e.advance_at(&code, "p0", close_at).await?;
                 room = e.read(&code, "p0").await?;
+                assert!(room["table"]["trickWinner"].is_null());
+                if room["table"]["phase"] == "trick" {
+                    assert_eq!(room["table"]["trickLeader"], winner);
+                }
             }
         }
         assert_eq!(room["table"]["phase"], "awaitShuffle");

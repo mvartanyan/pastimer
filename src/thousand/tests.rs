@@ -643,6 +643,8 @@ fn marriage_is_optional_and_counts_when_announcing_trick_is_lost() -> TestResult
         turn: 1,
         plays: vec![],
     };
+    assert_eq!(s.view("p0", &p, 0).trick_leader.as_deref(), Some("p1"));
+    assert_eq!(s.view("p0", &p, 0).trick_winner, None);
     let silent = apply(
         s.clone(),
         "p1",
@@ -687,6 +689,11 @@ fn marriage_is_optional_and_counts_when_announcing_trick_is_lost() -> TestResult
     assert_eq!(trick.winner, "p2");
     assert_eq!(s.raw["p1"], 100);
     assert_eq!(s.trump, Some(Suit::H));
+    let view = s.view("p0", &p, 0);
+    assert_eq!(view.trick_leader.as_deref(), Some("p1"));
+    assert_eq!(view.trick_winner.as_deref(), Some("p2"));
+    assert_eq!(view.announcing_card, Some("QH".parse()?));
+    assert_eq!(silent.view("p0", &p, 0).announcing_card, None);
     Ok(())
 }
 #[test]

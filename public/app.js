@@ -1,4 +1,4 @@
-import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick,bindDistributionDrag} from '/thousand.js';
+import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick,bindDistributionDrag,layoutTrick} from '/thousand.js';
 import {playingCard,cardBack,sortedHand,layoutHand} from '/cards.js';
 const $ = id => document.getElementById(id);
 let me, room, busy = false, refreshing = false, serverOffset=0;
@@ -10,7 +10,7 @@ const pendingKey=()=>`pastimer-pending:${me.id}`;
 function setPending(value){pending=value;if(me){if(value)localStorage.setItem(pendingKey(),JSON.stringify(value));else localStorage.removeItem(pendingKey());}sessionStorage.removeItem('pending-command');}
 function rememberRoom(code){localStorage.setItem(roomKey(),code);sessionStorage.setItem('room',code);$('resume-table').dataset.code=code;$('resume-table').textContent=`Return to table ${code}`;}
 function repaint(){if(room)render(room);}
-function viewport(){const tg=window.Telegram?.WebApp;document.documentElement.style.setProperty('--app-height',`${Math.min(innerHeight,tg?.viewportHeight||innerHeight,visualViewport?.height||innerHeight)}px`);layoutHand();}
+function viewport(){const tg=window.Telegram?.WebApp;document.documentElement.style.setProperty('--app-height',`${Math.min(innerHeight,tg?.viewportHeight||innerHeight,visualViewport?.height||innerHeight)}px`);layoutHand();layoutTrick();}
 async function api(path, body) {
   const response = await fetch(`/api${path}`, { ...(body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}) });
   const value = await response.json();
@@ -52,13 +52,13 @@ function renderSeats(){
     const seat=room.table?.seats?.find(s=>s.id===p.id),isMe=p.id===me.id,isTurn=room.table?.turn===p.id,pile=room.table?.piles?.find(v=>v.player===p.id);
     let position=isMe?'seat-self':activeOthers.indexOf(p)===0?'seat-left':activeOthers.indexOf(p)===1?'seat-right':'seat-self';
     if(p.id===inactive)position='seat-dealer';
-    const box=element('div','',`seat ${position}${isTurn?' is-turn':''}${pile?.top?' has-trick':''}`);box.dataset.player=p.id;if(pile?.top){box.title=`Inspect the last trick won by ${p.name}`;box.onclick=e=>{if(!box.dataset.recipient&&!e.target.closest('.seat-hand'))inspectTrick(room,p.id);};}
+    const box=element('div','',`seat ${position}${isTurn?' is-turn':''}${pile?.top?' has-trick':''}${room.table?.trickLeader===p.id?' is-leader':''}${room.table?.trickWinner===p.id?' is-taking':''}`);box.dataset.player=p.id;if(pile?.top){box.title=`Inspect the last trick won by ${p.name}`;box.onclick=e=>{if(!box.dataset.recipient&&!e.target.closest('.seat-hand'))inspectTrick(room,p.id);};}
     const avatar=element('span',room.computers?.includes(p.id)?'C':p.name.trim().slice(0,1).toUpperCase(),'avatar');avatar.style.setProperty('--avatar-color',colors[index%colors.length]);
     const info=element('div','','seat-info');info.append(element('div',p.name+(isMe?' - you':''),'seat-name'));
     const score=element('div','','seat-score');score.append(element('strong',String(seat?.score??room.scores[p.id]??0)),element('span','pts'));
     if(seat){const hand=element('button','','seat-hand');hand.type='button';hand.disabled=!pile?.top;hand.setAttribute('aria-label',`Last trick won by ${p.name}`);hand.dataset.pilePlayer=p.id;hand.append(cardBack(),element('span',String(seat.count)));if(pile?.top)hand.append(element('span','↗','pile-available'));hand.onclick=()=>inspectTrick(room,p.id);score.append(hand);}
     if(seat?.sticks)score.append(element('span',`${seat.sticks} sticks`,'stick-marks'));
-    info.append(score);const role=seat?.onBarrel?'BARREL':seat?.role==='dealer'?'DEALER':seat?.role==='contractor'?`CONTRACT ${room.table.order}`:isTurn?'TURN':'';if(role)info.append(element('span',role,'seat-role'));box.append(avatar,info);return box;
+    info.append(score);const contract=room.table?.contractor===p.id?`CONTRACT ${room.table.order}`:'',role=[seat?.onBarrel?'BARREL':'',contract||(seat?.role==='dealer'?'DEALER':isTurn&&!room.table?.trickLeader?'TURN':'')].filter(Boolean).join(' / ');if(role)info.append(element('span',role,'seat-role'));box.append(avatar,info);if(room.table?.trickWinner===p.id)box.append(element('span','TAKES TRICK','seat-activity'));else if(room.table?.trickLeader===p.id)box.append(element('span','LEAD','seat-activity'));return box;
   }));
 }
 function render(next) {
@@ -94,7 +94,7 @@ function render(next) {
     for(const card of $('hand').children)card.disabled=!(room.table?.actions??[]).some(a=>a.input==='card');
     $('thousand-table').hidden=false;const center=element('div','','table-center');const logo=element('div','♠','bid-emblem');logo.style.cssText='font:45px Georgia;color:#d8c08d';center.append(logo,element('p',room.phase==='lobby'?`${room.players.length} friends at the table`:'The next hand awaits.','table-instruction'));$('thousand-table').append(center);
   }
-  layoutHand();saveReceipt();
+  layoutHand();layoutTrick();saveReceipt();
 }
 function saveReceipt() {
   // Local receipts provide an anchor outside the server database. Export to preserve across devices.

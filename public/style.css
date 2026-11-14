@@ -185,3 +185,24 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 #room .table-hud>.hud-pill{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #room .hand .card.announces-marriage{box-shadow:0 0 0 2px var(--gold),0 0 12px #e5bc7380}
 @media(max-height:500px){.marriage-rings svg{width:44px;height:29px}#room .trump-suit{font-size:31px}#room .trump-marker{min-height:30px}}
+
+/* Trick information is anchored to the owning seats, with one central trump. */
+#room #thousand-table,#room .table-center{position:static}
+#room .table-hud{position:static;min-height:0;height:0;margin:0}
+#room .trump-marker{position:absolute;transform:translateX(-50%);z-index:4;pointer-events:none}
+.marriage-rings svg{width:62px;height:44px;filter:drop-shadow(0 1px 2px #0008)}
+#room .trick-area{position:absolute;inset:0;width:100%;height:100%;max-height:none;display:block;pointer-events:none}
+#room .trick-play{position:absolute;margin:0;transform:translate(-50%,-50%) rotate(var(--owner-angle,0deg));z-index:3}
+#room .trick-play .playing-card{width:var(--played-card-width,68px);height:auto}
+#room .trick-play.is-lead>.playing-card{box-shadow:0 0 0 2px #8ac6dc,0 4px 10px #0005}
+#room .trick-play.is-winning>.playing-card{box-shadow:0 0 0 3px var(--gold),0 0 16px #e5bc7360}
+#room .card-marriage{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);width:94%;padding:2px;background:#17332fe8;border-radius:9px;filter:drop-shadow(0 2px 3px #0007)}
+#room .card-marriage svg{width:100%;height:auto}
+#room .seat.is-leader{outline:2px solid #8ac6dc;outline-offset:2px}
+#room .seat.is-taking{outline:2px solid var(--gold);outline-offset:2px;animation:winner-glow .75s ease-in-out infinite alternate}
+.seat-activity{position:absolute;right:6px;top:-8px;border-radius:5px;padding:2px 5px;background:#244c5a;color:#e3f6ff;border:1px solid #8ac6dc;font-size:8px;font-weight:800;letter-spacing:.4px;white-space:nowrap}
+.is-taking .seat-activity{background:#e5bc73;border-color:#f7dca5;color:#18312b}
+@keyframes winner-glow{to{box-shadow:0 0 18px #e5bc7380}}
+@media(max-height:600px){#room .seat-self{max-width:94%}#room .seat-self .avatar{display:none}#room .seat-self .seat-info{display:flex;align-items:center;gap:5px}#room .seat-self .seat-name{max-width:80px}#room .seat-self .seat-score{margin:0}#room .seat-self .seat-role{display:inline;margin:0}.marriage-rings svg{width:49px;height:35px}#room .trump-marker{min-height:29px}#room .trump-suit{font-size:30px}}
+
+@media(max-height:500px) and (min-aspect-ratio:1/1){#room .seat-left,#room .seat-right{max-width:32%;padding:4px 5px}#room .seat-left .avatar,#room .seat-right .avatar{display:none}#room .seat-info{min-width:0}#room .seat-name{font-size:10px}#room .seat-score{flex-wrap:wrap;row-gap:0}}
