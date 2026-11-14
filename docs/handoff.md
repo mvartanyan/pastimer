@@ -6,7 +6,7 @@ Updated 2026-11-14. Repository: `mvartanyan/pastimer`. Local Horse continuation:
 
 The Rust multiplayer platform, the owner's complete Thousand rules, audit verifier and redesigned card-table UI are implemented. **Pastimer is deployed and verified on Horse at https://1000.vartanyan.com**, using the established local `/Users/michael/dev/k3s-horse` setup. [@pastimerbot](https://t.me/pastimerbot) has a verified default `Play / Играть` menu button pointing to that origin.
 
-The running application source is `f3fe9a915567163acf0c7ec71047002c51377a91`. The live three-player browser deal, deployed audit verifier, production authentication restrictions, HTTPS, asset hashes and persistence across pod replacement pass. The browser uses signed synthetic Telegram identities; actual Telegram-client identity and multiplayer acceptance remain a separate check. See [the Horse deployment record](horse-2026-11-14.md) for image digests, backups and operating details.
+The running application source is `fe12ef5981f88f2cb99136442fe2db0d2a882d0f`. The mobile lobby layout is corrected, and Thousand now supports computer seats for solo or two-human testing. The owner confirmed actual Telegram launch, identity and table creation. Live browser checks also completed solo/two-human computer games and verified their proofs with the deployed audit binary. Original sessions, completed room and exact audit survived both pod replacement and this upgrade. See [the current Horse release record](horse-computers-2026-11-14.md) for image digests, backups and checks; [the initial record](horse-2026-11-14.md) retains the first deployment history.
 
 Relevant implementation commits:
 
@@ -15,6 +15,8 @@ Relevant implementation commits:
 - `ba4ac97` — illustrated playing cards and redesigned mobile card-table UI, with browser checks for sorting, clipboard invitation codes and transfer previews/duplicate prevention.
 - `0516a91` — keep local card selection responsive during background refresh, with a regression check that holds the refresh response open.
 - `f3fe9a9` - keep submitted actions responsive during background refresh and reject stale room snapshots; local regression and live Horse validation passed.
+- `4a9119c` - stack mobile lobby cards and normalize native form control heights and spacing.
+- `fe12ef5` - legal computer opponents for one/two humans, computer-dealer requests, audited automatic turns, persistence and browser acceptance.
 
 This handoff, root `AGENTS.md` and the checked-in screenshot gallery provide context without needing the cloud conversation. The sidebar placement of a chat has no bearing on the Git commits available to a local checkout.
 
@@ -43,6 +45,7 @@ The full specification is [English](thousand-rules.md) and [Russian](thousand-ru
 | Startup/configuration and embedded HTTP assets | `src/main.rs`, `src/http.rs`, `.env.example` |
 | Room lifecycle, typed dispatch and command processing | `src/engine.rs`, `src/model.rs`, `src/game.rs` |
 | SQLite snapshots, events, sessions and durable retry receipts | `src/store.rs` |
+| Computer policy, transactional automatic turns and roster | `src/computer.rs`, `src/engine.rs`, `src/model.rs` |
 | Thousand transitions, settings and scoring | `src/thousand/mod.rs`, `src/scoring.rs` |
 | Explicit player-visible Thousand projection | `src/thousand/view.rs` |
 | Deck commitments, audit assembly and replay | `src/crypto.rs`, `src/audit.rs`, `src/thousand/verify.rs` |
@@ -53,7 +56,7 @@ The full specification is [English](thousand-rules.md) and [Russian](thousand-ru
 | Auction, transfers, play, deadlines and trick-pile UI | `public/thousand.js` |
 | Rules tests | `src/thousand/tests.rs` |
 | Persistence/API/concurrency/compatibility tests | `tests/platform.rs`, `tests/thousand.rs`, `tests/fixtures/node-v1.json` |
-| Browser flows and visual capture | `tests/browser-smoke.mjs`, `tests/thousand-browser.mjs`, `scripts/capture-screenshots.mjs` |
+| Browser flows and visual capture | `tests/browser-smoke.mjs`, `tests/thousand-browser.mjs`, `tests/computer-browser.mjs`, `scripts/capture-screenshots.mjs` |
 | Deployment preparation | `deploy/Dockerfile`, `deploy/k3s/`, [deployment guide](deployment.md) |
 
 Read [architecture.md](architecture.md) for transaction, privacy and cryptographic boundaries; [game-authoring.md](game-authoring.md) explains adding games. Games use concrete serializable state/action/view types and exhaustive typed dispatch. The older high-card demo and Node-era snapshot/audit fixtures are retained for compatibility.
@@ -102,7 +105,7 @@ npm run test:browser
 
 The Rust suite has 30 tests covering complete deals/matches, the attainable 380-point maximum, barrel behavior, sticks, privacy, rollback, four nines, per-player trick piles, restart recovery, rule replay, proof tampering, command races, retry idempotency, Telegram signatures and legacy compatibility. Browser checks cover the demo, full three-player Thousand play with real three-second closure, four-player here bidding/mixed-visibility distribution/dismissal, audit verification, reload/retry, card rendering, sorting, clipboard copying, mobile overflow and card selection during an in-flight refresh.
 
-Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; actual Telegram-client acceptance remains pending. See [the deployment record](horse-2026-11-14.md).
+Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; the owner has since confirmed actual Telegram launch, identity and table creation. See [the current release record](horse-computers-2026-11-14.md) for the computer follow-up and live browser checks.
 
 To verify a downloaded audit independently:
 
@@ -132,7 +135,20 @@ Consistent backups with successful SQLite integrity checks are on Horse:
 
 - `/var/backups/pastimer/pastimer-20261114-pre-refresh-fix.sqlite`
 - `/var/backups/pastimer/pastimer-20261114-pre-restart.sqlite`
+- `/var/backups/pastimer/pastimer-20261114-pre-computers.sqlite`
 
 The prior image and build archives are retained for rollback. The temporary native builder is stopped, with no build tasks left running. Colima's unused failed-build cache was pruned (2.335GB); containers and volumes remained at zero, guest fstrim ran, temporary VM DNS was restored and `dotint-build` returned to Stopped. The original Docker context remains `colima`.
 
-Remaining acceptance: open [@pastimerbot](https://t.me/pastimerbot) in actual Telegram, press Start and `Play / Играть`, confirm the signed-in identity, then join/play from other Telegram accounts. Synthetic identities do not establish that real-client check. A Main Mini App/profile launch button is optional and separate from the configured menu button. Scheduled/off-host database backups are not established by this initial deployment.
+## Layout and computer-opponent follow-up
+
+The owner confirmed the real Telegram launch/identity/create-table check, then requested a mobile layout correction and computer opponents so one or two humans can test without recruiting a full table. Both changes are deployed in `fe12ef5`.
+
+The lobby stacks below 650px and uses aligned 46px form controls, including normalized native selects. New `Computer seats` options include `2 computers - solo` and `1 computer - 2 people` for a three-seat table. Four-seat tables support up to three computers. Computer settings are platform metadata, separate from the unchanged Thousand rules. Existing rooms decode with an empty computer roster.
+
+Computers pass in auctions, choose private transfers, retain the current order and play legal cards, preferring an available marriage announcement. The policy sees only its own typed public view; every action is validated, committed and audited through the same code as human moves. Computers progress until a human decision or persisted trick deadline, in bounded SQLite transactions. Room reads resume ready computer turns after restart. When a computer deals, a human presses `Ask computer to deal`; settled results stay available until that request.
+
+All 33 Rust tests, formatting, strict Clippy and the complete browser suites pass. Tests cover one/two humans at both table sizes, four audited deals per configuration, privacy, capacity validation, old snapshots, restart/concurrent closure, durable retries and re-hashed forged dealer requests. Browser suites cover the original human-only flows plus solo/two-human games. Public HTTPS live flows also completed both computer games; the deployed verifier accepted one deal/30 moves in each (88 events solo, 87 with two humans). Old sessions and the exact original audit remained valid after the upgrade. New live screenshots and proofs are in ignored `artifacts/deployments/20261114-computers/`.
+
+The current image manifest digest is `sha256:6c7f197a66f61470cd765ce9d1947fec7798867914e45a26881076a4424c5f9d`; its runtime image/config ID is `sha256:5df88912a5b95046d075998f2f85a8e912b236637a6bc68eec5b673e7f43902f`. Pod `pastimer-844c4f7458-j74cr` is Ready with zero restarts on the same PVC. The new pre-upgrade backup passed SQLite integrity checking. Native build archives and previous images are retained, the temporary builder is stopped, and Colima was not started for this follow-up.
+
+Reopen the Mini App to load the new assets, then create a computer table to test alone. A manual real-client computer-game playthrough is distinct from the passing signed synthetic browser flows. A Main Mini App/profile launch button remains optional; the default menu button is configured. Scheduled/off-host backups are not established by this setup. See [the current release record](horse-computers-2026-11-14.md).
