@@ -22,8 +22,19 @@ pub struct View {
     pub server_now: i64,
     pub controls: Controls,
     pub transfers: Vec<Transfer>,
+    pub deliveries: Vec<Delivery>,
+    pub played_cards: Vec<Card>,
     pub last_deal: Option<Value>,
     pub audit_deals: usize,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Delivery {
+    pub id: usize,
+    pub from: String,
+    pub to: String,
+    pub public: bool,
+    pub card: Option<Card>,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -129,6 +140,8 @@ impl State {
             seats:players.iter().enumerate().map(|(i,p)|SeatView{player:p.clone(),count:self.hands.get(&p.id).map_or(0,Vec::len),score:self.ledger.get(&p.id),sticks:self.sticks.get(&p.id).copied().unwrap_or(0),on_barrel:self.ledger.get(&p.id)==i64::from(self.settings.barrel_threshold),round_points:self.raw.get(&p.id).copied().unwrap_or(0),role:if players.len()==4&&i==self.dealer{"dealer"}else if self.contractor==Some(i){"contractor"}else{"player"}}).collect(),
             piles:players.iter().map(|p|PileView{player:p.id.clone(),count:self.tricks.iter().filter(|t|t.winner==p.id).count(),top:self.tricks.iter().rev().find(|t|t.winner==p.id).cloned()}).collect(),plays,close_at,server_now:now,controls,
             transfers:self.movements.iter().filter_map(|m|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to)&& (m.public||from==viewer||to==viewer){return Some(Transfer{player:to.clone(),card:m.card.clone(),public:m.public})}None}).collect(),
-            last_deal:self.archives.last().map(|r|json!({"deal":r.deal,"status":r.status,"contract":r.contract,"before":r.before.totals,"after":r.after.totals,"sticks":r.sticks_after})),audit_deals:self.archives.len()}
+            deliveries:self.movements.iter().enumerate().filter_map(|(id,m)|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to){Some(Delivery{id,from:from.clone(),to:to.clone(),public:m.public,card:(m.public||from==viewer||to==viewer).then(||m.card.clone())})}else{None}}).collect(),
+            played_cards:self.movements.iter().filter(|m|matches!(m.to,Zone::Table{..})).map(|m|m.card.clone()).collect(),
+            last_deal:self.archives.last().map(|r|json!({"deal":r.deal,"dealer":r.dealer,"status":r.status,"contract":r.contract,"before":r.before.totals,"after":r.after.totals,"sticks":r.sticks_after})),audit_deals:self.archives.len()}
     }
 }

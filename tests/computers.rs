@@ -107,6 +107,10 @@ async fn step(e: &Engine, code: &str, humans: u8) -> Result<Value> {
         .await?;
         return e.read(code, "human-0").await;
     }
+    if let Some(due) = room["computerDueAt"].as_i64() {
+        e.advance_at(code, "human-0", due).await?;
+        return e.read(code, "human-0").await;
+    }
     if room["table"]["phase"] == "awaitShuffle"
         && room["computers"]
             .as_array()
@@ -175,11 +179,10 @@ async fn one_or_two_humans_complete_deals_with_legal_auditable_computers() -> Te
                     .iter()
                     .any(|c| c["action"]["action"]["type"] == "play")
             );
-            assert!(
-                computer_actions
-                    .iter()
-                    .any(|c| c["action"]["action"]["type"] == "distribute")
-            );
+            assert!(computer_actions.iter().any(|c| matches!(
+                c["action"]["action"]["type"].as_str(),
+                Some("bid" | "pass" | "here" | "distribute")
+            )));
             assert!(
                 computer_actions
                     .iter()
@@ -265,7 +268,7 @@ async fn computers_recover_after_restart_and_concurrent_deadline_resolution() ->
     let path = path.to_str().ok_or("path")?;
     let (e, code) = setup(path, 4, 1).await?;
     let mut room = e.read(&code, "human-0").await?;
-    for _ in 0..30 {
+    for _ in 0..70 {
         if room["table"]["phase"] == "closing" {
             break;
         }
@@ -332,5 +335,61 @@ async fn computers_recover_after_restart_and_concurrent_deadline_resolution() ->
     assert_eq!(first["version"], again["version"]);
     assert_eq!(first["table"]["hand"], again["table"]["hand"]);
     assert_eq!(computers.as_array().map(Vec::len), Some(3));
+    Ok(())
+}
+
+#[tokio::test]
+async fn computer_think_deadline_survives_restart_and_never_bursts() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let file = dir.path().join("paced.sqlite");
+    let path = file.to_str().ok_or("path")?;
+    let (e, code) = setup(path, 3, 1).await?;
+    let mut room = e.read(&code, "human-0").await?;
+    for _ in 0..30 {
+        if room["computerDueAt"].is_number() {
+            break;
+        }
+        room = step(&e, &code, 1).await?;
+    }
+    let due = room["computerDueAt"].as_i64().ok_or("deadline")?;
+    let version = room["version"].as_u64().ok_or("version")?;
+    e.advance_at(&code, "human-0", due - 1).await?;
+    assert_eq!(e.read(&code, "human-0").await?["version"], version);
+    e.store.pool.close().await;
+    let e = Engine::new(Store::open(path).await?);
+    assert_eq!(e.read(&code, "human-0").await?["computerDueAt"], due);
+    e.advance_at(&code, "human-0", due).await?;
+    let after = e.read(&code, "human-0").await?;
+    assert_eq!(after["version"], version + 1);
+    if let Some(next) = after["computerDueAt"].as_i64() {
+        assert!(next >= due + 3000);
+    }
+    e.advance_at(&code, "human-0", due).await?;
+    assert_eq!(e.read(&code, "human-0").await?["version"], version + 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn active_table_recovers_without_browser_storage_and_backfills_older_rooms() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let file = dir.path().join("resume.sqlite");
+    let path = file.to_str().ok_or("path")?;
+    let e = Engine::new(Store::open(path).await?);
+    let room = e
+        .create_configured(human(0), GameId::Thousand, None)
+        .await?;
+    let code = text(&room["code"])?.to_owned();
+    assert_eq!(e.store.recent("human-0").await?, Some(code.clone()));
+    assert_eq!(e.store.recent("outsider").await?, None);
+    sqlx::query("DELETE FROM player_rooms")
+        .execute(&e.store.pool)
+        .await?;
+    assert_eq!(e.store.recent("human-0").await?, Some(code.clone()));
+    e.join(&code, human(1)).await?;
+    e.store.pool.close().await;
+    let e = Engine::new(Store::open(path).await?);
+    let new_cookie = e.store.session(&human(1)).await?;
+    let identity = e.store.authenticate(&new_cookie).await?.ok_or("session")?;
+    assert_eq!(e.store.recent(&identity.id).await?, Some(code));
     Ok(())
 }

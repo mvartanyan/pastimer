@@ -1,15 +1,15 @@
 # Thousand mobile UI previews
 
-These previews show the interface at application commit `ba4ac97`: an illustrated deck, a felt table with relative player seats, a fanned sortable hand, transfer previews and separate inspectable trick piles.
+These previews show the interface after the gameplay update: larger suit indices, auction speech bubbles, hand-selected transfers and seat-based last-trick inspection.
 
-Captured as full-page images at a 430 × 932 CSS-pixel viewport with a 2× device scale. The helper drives actual game actions against an isolated Rust server using signed synthetic Telegram identities, then verifies the exported audit. These are browser previews rather than captures from a live Telegram client. Card order, names' seating positions and table code vary between runs.
+Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device scale. The helper drives actual game actions against an isolated Rust server using signed synthetic Telegram identities, then verifies the exported audit. These are browser previews rather than captures from a live Telegram client. Card order, names' seating positions and table code vary between runs.
 
 | Situation | Screenshot |
 | --- | --- |
 | Bidding and sealed stock | [01-bidding.png](01-bidding.png) |
 | Choosing cards to give, with independent visibility | [02-distribution.png](02-distribution.png) |
-| A trick in progress and a selected legal card | [03-playing-a-trick.png](03-playing-a-trick.png) |
-| Deal results and each player's last captured trick | [04-collected-tricks.png](04-collected-tricks.png) |
+| A completed trick before its three-second collection | [03-playing-a-trick.png](03-playing-a-trick.png) |
+| Last captured trick opened from a player seat | [04-collected-tricks.png](04-collected-tricks.png) |
 
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 

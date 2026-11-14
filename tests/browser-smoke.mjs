@@ -59,9 +59,6 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
   await refreshStarted;
   try{
     await a.locator('#hand .card').first().click();
-    assert.equal(await a.locator('#hand .card').first().getAttribute('aria-pressed'),'true','Card selection must work during a background refresh');
-    assert.equal(await a.getByRole('button',{name:'Play selected card'}).isEnabled(),true);
-    await a.getByRole('button',{name:'Play selected card'}).click();
     await a.waitForFunction(()=>document.querySelectorAll('#hand .card').length===4,null,{timeout:5000});
   }finally{releaseRefresh();}
   // The refresh carries the pre-move snapshot; it must not restore the played card.
@@ -83,7 +80,6 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
         await page.route(pattern,loseCommittedResponse);
       }
       await page.locator('#hand .card').first().click();
-      await page.getByRole('button',{name:'Play selected card'}).click();
       try { await page.waitForFunction(expected=>document.querySelectorAll('#hand .card').length===expected,4-round,{timeout:10000}); } catch(e) {console.log('NOTICE',await page.locator('#notice').textContent());await page.screenshot({path:'/tmp/pastimer-failure.png',fullPage:true});throw e;}
       if(loseResponse){
         await page.getByRole('button',{name:'Retry previous move'}).waitFor();
@@ -93,7 +89,7 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
         assert.equal(await page.locator('#hand .card').count(),4);
       }
     }
-    if(round<4) for(const page of pages) await page.getByRole('button',{name:'Play selected card'}).waitFor();
+    if(round<4) for(const page of pages)await page.waitForFunction(()=>[...document.querySelectorAll('#hand .card')].some(c=>!c.disabled));
   }
   await a.getByText('Game complete.',{exact:false}).waitFor();
   const result=await a.evaluate(async code=>{

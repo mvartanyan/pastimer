@@ -58,6 +58,7 @@ pub fn router(store: Store, config: Config) -> Result<Router> {
         .route("/api/games",get(||async{Json(json!([{"id":"high-card-demo","name":"High card · platform demo","version":1,"minPlayers":2,"maxPlayers":4},{"id":"thousand","name":"Тысяча · Thousand","version":1,"minPlayers":3,"maxPlayers":4}]))}))
         .route("/api/auth",post(login)).route("/api/me",get(me))
         .route("/api/rooms",post(create)).route("/api/rooms/{code}",get(read))
+        .route("/api/rooms/active",get(active_room))
         .route("/api/rooms/{code}/join",post(join)).route("/api/rooms/{code}/commands",post(command))
         .route("/api/rooms/{code}/audit",get(audit))
         .fallback(||async{Error::new(StatusCode::NOT_FOUND,"Not found")})
@@ -219,6 +220,15 @@ async fn login(
 }
 async fn me(State(state): State<App>, headers: HeaderMap) -> Result<Json<Player>> {
     Ok(Json(player(&state, &headers).await?))
+}
+async fn active_room(State(state): State<App>, headers: HeaderMap) -> Result<Json<Option<Value>>> {
+    let p = player(&state, &headers).await?;
+    let room = if let Some(code) = state.engine.store.recent(&p.id).await? {
+        Some(state.engine.read(&code, &p.id).await?)
+    } else {
+        None
+    };
+    Ok(Json(room))
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -196,6 +196,7 @@ impl Engine {
             }
         };
         let mut room = Room {
+            computer_due_at: None,
             computers: vec![],
             options,
             id: Uuid::new_v4().to_string(),
@@ -229,6 +230,7 @@ impl Engine {
             )?;
         }
         Store::save(&mut tx, &room).await?;
+        Store::remember(&mut tx, &player.id, &room.code).await?;
         let view = Self::view(&room, &player.id)?;
         tx.commit().await?;
         Ok(view)
@@ -268,6 +270,7 @@ impl Engine {
             )?;
             Store::save(&mut tx, &room).await?;
         }
+        Store::remember(&mut tx, &player.id, &room.code).await?;
         let view = Self::view(&room, &player.id)?;
         tx.commit().await?;
         Ok(view)
@@ -440,16 +443,29 @@ impl Engine {
         }
         Ok(())
     }
+    fn schedule_computer(room: &mut Room, now: i64, delay: i64) {
+        room.computer_due_at = crate::computer::next(room, now).map(|_| now + delay);
+    }
     fn advance_computers(room: &mut Room, now: i64) -> Result<()> {
-        for _ in 0..32 {
-            let Some((actor, action)) = crate::computer::next(room, now) else {
-                return Ok(());
-            };
-            let version = room.version;
-            Self::apply_action(room, &actor, &action, version, now)?;
-            room.version += 1;
+        let Some((actor, action)) = crate::computer::next(room, now) else {
+            room.computer_due_at = None;
+            return Ok(());
+        };
+        let Some(due) = room.computer_due_at else {
+            Self::schedule_computer(room, now, 3000);
+            return Ok(());
+        };
+        if now < due {
+            return Ok(());
         }
-        Err(Error::internal())
+        let was_auction = matches!(room.lifecycle.state(), Some(GameState::Thousand(s)) if matches!(s.phase, crate::thousand::Phase::Auction(_)));
+        let version = room.version;
+        Self::apply_action(room, &actor, &action, version, now)?;
+        room.version += 1;
+        let stock_opened = was_auction
+            && matches!(room.lifecycle.state(), Some(GameState::Thousand(s)) if matches!(s.phase, crate::thousand::Phase::Stock));
+        Self::schedule_computer(room, now, if stock_opened { 6000 } else { 3000 });
+        Ok(())
     }
     pub async fn command(&self, code: &str, actor: &str, command: Command) -> Result<Value> {
         self.advance_at(code, actor, Utc::now().timestamp_millis())
@@ -495,7 +511,15 @@ impl Engine {
         let now = Utc::now().timestamp_millis();
         Self::apply_action(&mut room, actor, &command.action, command.version, now)?;
         room.version += 1;
-        Self::advance_computers(&mut room, now)?;
+        let stock_opened = matches!(
+            &command.action,
+            Action::Thousand {
+                action: crate::thousand::Action::Pass
+                    | crate::thousand::Action::Here
+                    | crate::thousand::Action::Bid { .. }
+            }
+        ) && matches!(room.lifecycle.state(), Some(GameState::Thousand(s)) if matches!(s.phase, crate::thousand::Phase::Stock));
+        Self::schedule_computer(&mut room, now, if stock_opened { 6000 } else { 3000 });
         Store::save(&mut tx, &room).await?;
         sqlx::query("INSERT INTO commands VALUES(?,?,?,?)")
             .bind(&room.id)
@@ -571,7 +595,35 @@ impl Engine {
             count: d.proof.cards.len(),
             acknowledgements: d.acknowledgements.clone(),
         });
+        let deal = if let Some(GameState::Thousand(s)) = room.lifecycle.state() {
+            s.deal
+        } else {
+            0
+        };
+        let auction_calls = room
+            .events
+            .iter()
+            .filter(|e| {
+                e.data["deal"] == deal
+                    && matches!(
+                        e.kind.as_str(),
+                        "auction.opened" | "auction.bid" | "auction.pass" | "auction.here"
+                    )
+            })
+            .map(|e| AuctionCall {
+                seq: e.seq,
+                player: e.data["player"].as_str().unwrap_or_default().into(),
+                kind: e.kind.clone(),
+                amount: e.data["amount"]
+                    .as_u64()
+                    .and_then(|n| u16::try_from(n).ok()),
+                at: chrono::DateTime::parse_from_rfc3339(&e.at)
+                    .map_or(0, |at| at.timestamp_millis()),
+            })
+            .collect();
         Ok(serde_json::to_value(RoomView {
+            computer_due_at: room.computer_due_at,
+            auction_calls,
             computers: room.computers.clone(),
             options: room.options.clone(),
             id: room.id.clone(),
@@ -595,7 +647,8 @@ impl Engine {
         Self::member(&room, actor)?;
         Self::compatible(&room)?;
         let due = matches!(room.lifecycle.state(),Some(GameState::Thousand(s))if s.due(now))
-            || crate::computer::next(&room, now).is_some();
+            || (crate::computer::next(&room, now).is_some()
+                && room.computer_due_at.is_none_or(|at| now >= at));
         drop(conn);
         if !due {
             return Ok(());
@@ -605,15 +658,17 @@ impl Engine {
         Self::member(&room, actor)?;
         Self::compatible(&room)?;
         let before = room.version;
+        let before_due = room.computer_due_at;
         if let Some(GameState::Thousand(state)) = room.lifecycle.state()
             && state.due(now)
         {
             let result = (**state).clone().close(&room.players, now)?;
             Self::thousand_outcome(&mut room, result, "system")?;
             room.version += 1;
+            Self::schedule_computer(&mut room, now, 3000);
         }
         Self::advance_computers(&mut room, now)?;
-        if room.version != before {
+        if room.version != before || room.computer_due_at != before_due {
             Store::save(&mut tx, &room).await?;
         }
         tx.commit().await?;

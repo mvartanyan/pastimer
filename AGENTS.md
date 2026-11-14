@@ -9,6 +9,11 @@ Read [README.md](README.md) and [docs/handoff.md](docs/handoff.md) when starting
 - Treat [English rules](docs/thousand-rules.md) and [Russian rules](docs/thousand-rules.ru.md) as the agreed specification. Keep both synchronized if rules change; ask about genuine new ambiguities rather than silently adopting another Thousand variant. Keep the rules files about the rules.
 - Thousand publishes the shuffled deck hash and deals immediately; players do not acknowledge it. The legacy high-card demo still uses acknowledgements.
 - After three seconds a completed trick joins its winner's pile. Players can inspect the most recent trick won by **each player**, including themselves, throughout the current deal.
+- Normal play fits the Mini App viewport. Cards play on one tap; marriage announcement remains a voluntary toggle chosen before the card. Inspect last won tricks from the seat/hand display, without a separate pile row.
+- Auction calls are paced three seconds apart and shown in seat speech bubbles. Keep each player's latest call until the auction ends, then show the contractor and contract. The log retains every call.
+- Select stock transfers from the hand. Recipients see open cards face up and secret cards face down; reveal a secret card, then tap again to sort it into the hand. Taken stock disappears from the table.
+- Computer bids use conservative guaranteed tricks/points and an attainable marriage; the policy sees only its own view and public played cards. Preserve the winning-card/announcement plan when distributing and playing.
+- Table recovery must work with fresh browser storage after Telegram re-authentication. Preserve server-side membership lookup and actor-scoped durable command IDs.
 - Preserve hidden information in public views and events. Reveal a settled or cancelled deal's full deck/movements/tricks in its audit, while keeping an unfinished deal private. See [the trust model](docs/architecture.md) for what the commitment actually establishes.
 
 ## Development

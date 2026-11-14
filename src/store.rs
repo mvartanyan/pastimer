@@ -38,6 +38,8 @@ impl Store {
           CREATE TABLE IF NOT EXISTS commands(room_id TEXT NOT NULL, actor TEXT NOT NULL, request_id TEXT NOT NULL, fingerprint TEXT NOT NULL, PRIMARY KEY(room_id,actor,request_id));
           CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, player TEXT NOT NULL, expires INTEGER NOT NULL);")
           .execute(&pool).await?;
+        sqlx::query("CREATE TABLE IF NOT EXISTS player_rooms(player_id TEXT PRIMARY KEY, room_code TEXT NOT NULL)")
+            .execute(&pool).await?;
         Ok(Self { pool })
     }
     pub async fn get(conn: &mut SqliteConnection, code: &str) -> Result<Option<Room>> {
@@ -52,6 +54,23 @@ impl Store {
         sqlx::query("INSERT INTO rooms VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot")
             .bind(&room.id).bind(&room.code).bind(serde_json::to_string(room)?).execute(conn).await?;
         Ok(())
+    }
+    pub async fn remember(conn: &mut SqliteConnection, actor: &str, code: &str) -> Result<()> {
+        sqlx::query("INSERT INTO player_rooms VALUES(?,?) ON CONFLICT(player_id) DO UPDATE SET room_code=excluded.room_code")
+            .bind(actor).bind(code).execute(conn).await?;
+        Ok(())
+    }
+    pub async fn recent(&self, actor: &str) -> Result<Option<String>> {
+        let saved = sqlx::query_scalar("SELECT room_code FROM player_rooms WHERE player_id=?")
+            .bind(actor)
+            .fetch_optional(&self.pool)
+            .await?;
+        if saved.is_some() {
+            return Ok(saved);
+        }
+        // Recover membership for tables created before the reconnect index existed.
+        Ok(sqlx::query_scalar("SELECT code FROM rooms WHERE EXISTS (SELECT 1 FROM json_each(rooms.snapshot,'$.players') AS p WHERE json_extract(p.value,'$.id')=?) ORDER BY rowid DESC LIMIT 1")
+            .bind(actor).fetch_optional(&self.pool).await?)
     }
     pub async fn session(&self, player: &Player) -> Result<String> {
         let secret = token();

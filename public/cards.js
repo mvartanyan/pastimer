@@ -16,7 +16,7 @@ function court(rank,s){
   const face=rank==='K'?`<path d="M65 72Q79 88 93 72L90 89 79 96 68 89Z" fill="${navy}"/><path d="M68 70Q74 65 79 71Q85 65 91 70" fill="none" stroke="${navy}" stroke-width="3"/>`:rank==='Q'?`<path d="M62 49Q49 59 58 89L68 82V51M97 49Q110 59 101 89L91 82V51" fill="${navy}"/><circle cx="61" cy="72" r="3" fill="${gold}"/><circle cx="98" cy="72" r="3" fill="${gold}"/>`:`<path d="M64 48 58 64 64 70M96 48 102 64 96 70" stroke="${navy}" stroke-width="5" fill="none"/>`;
   const accessory=rank==='Q'?`<path d="M48 108 50 74" stroke="${gold}" stroke-width="2"/><path d="M50 82Q36 75 42 67Q45 62 50 69Q57 60 61 67Q64 75 50 82" fill="${red}" stroke="${gold}"/><path d="M50 95Q38 94 41 85Q50 85 50 95" fill="${navy}"/>`:`<path d="M${rank==='K'?'110 107 110 38 115 29 120 38 120 107':'46 109 46 37 50 28 54 37 54 109'}" fill="${gold}" stroke="${navy}" stroke-width="1.5"/><path d="M${rank==='K'?'105 82H125':'40 82H60'}" stroke="${red}" stroke-width="4"/>`;
   const half=`<path d="M43 111V94L63 79H96L117 94V111Z" fill="${navy}"/><path d="M45 97 70 83 101 111H75Z" fill="${red}"/><path d="M48 96 76 112M62 86 91 112M92 84 111 108" stroke="${gold}" stroke-width="3"/><path d="M62 47Q79 41 97 47L94 73 79 83 65 73Z" fill="${skin}" stroke="${navy}" stroke-width="1.4"/>${face}<path d="M68 55H74M85 55H91" stroke="${navy}" stroke-width="2"/><path d="M79 56 77 65H82M74 72H84" stroke="${red}" fill="none" stroke-width="1.2"/>${head}${accessory}<path d="M72 95 80 87 88 95 80 103Z" fill="${gold}"/><path d="M80 92 83 95 80 98 77 95Z" fill="${red}"/>`;
-  return `<rect x="37" y="24" width="86" height="176" rx="2" fill="#ede2c9" stroke="${gold}" stroke-width="1.4"/><path d="M40 111H120M40 113H120" stroke="${gold}"/>${half}<g transform="translate(160 224) rotate(180)">${half}</g>${pip(s,80,112,15)}`;
+  return `<rect x="37" y="24" width="86" height="176" rx="2" fill="#ede2c9" stroke="${gold}" stroke-width="1.4"/><path d="M40 111H120M40 113H120" stroke="${gold}"/>${half}<g transform="translate(160 224) rotate(180)">${half}</g><circle cx="80" cy="112" r="24" fill="#fff8e9" stroke="${gold}" stroke-width="2"/>${pip(s,80,112,38)}`;
 }
 function art(code){
   const rank=code.slice(0,-1),s=SUITS[code.slice(-1)];
@@ -36,9 +36,10 @@ function art(code){
       if(n===7)positions.push([80,81]);
       if(n===10)positions.push([80,69],[80,155]);
     }
-    center=positions.map(([x,y])=>pip(s,x,y,n>=8?20:23,y>112)).join('');
+    center=positions.map(([x,y])=>pip(s,x,y,n>=8?26:29,y>112)).join('');
   }
-  const corner=`<text x="16" y="28" text-anchor="middle" fill="${s.color}" font-family="Georgia,serif" font-size="${rank==='10'?22:27}" font-weight="bold">${rank}</text>${pip(s,16,43,14)}`;
+  const corner=`<text x="22" y="36" text-anchor="middle" fill="${s.color}" font-family="Georgia,serif" font-size="${rank==='10'?30:36}" font-weight="bold">${rank}</text>${pip(s,22,63,32)}`;
+  center=`<g transform="translate(5 0) scale(.95 1)">${center}</g>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 224" aria-hidden="true" focusable="false"><defs><linearGradient id="${id}" x2="1" y2="1"><stop stop-color="#fffdf6"/><stop offset="1" stop-color="#f1e8d3"/></linearGradient></defs><rect x=".75" y=".75" width="158.5" height="222.5" rx="10" fill="url(#${id})" stroke="#d6cbb4" stroke-width="1.5"/>${corner}<g transform="translate(160 224) rotate(180)">${corner}</g>${center}</svg>`;
 }
 export function playingCard(code,{interactive=false,selected=false,className=''}={}){
@@ -60,10 +61,9 @@ export function sortedHand(cards,mode='suit',game='thousand'){
   return [...cards].sort((a,b)=>mode==='rank'?rank(b)-rank(a)||suits.indexOf(a.slice(-1))-suits.indexOf(b.slice(-1)):suits.indexOf(a.slice(-1))-suits.indexOf(b.slice(-1))||rank(b)-rank(a));
 }
 export function layoutHand(){
-  const hand=document.getElementById('hand');if(!hand)return;
-  const n=hand.children.length;if(!n)return;
-  const available=Math.max(240,hand.clientWidth-16),width=Math.min(88,Math.max(64,window.innerWidth*.173));
+  const hand=document.getElementById('hand');if(!hand?.children.length)return;
+  const n=hand.children.length,available=Math.max(120,hand.clientWidth-8),height=Math.max(74,hand.clientHeight-14),width=Math.min(112,height*5/7,available);
   const overlap=n>1?Math.max(0,(n*width-available)/(n-1)):0;
   hand.style.setProperty('--card-width',`${width}px`);hand.style.setProperty('--overlap',`${overlap}px`);
-  for(const [i,card]of [...hand.children].entries()){const offset=i-(n-1)/2;card.style.setProperty('--tilt',`${offset*1.5}deg`);card.style.setProperty('--arc',`${Math.abs(offset)*1.2}px`);card.style.setProperty('--card-index',String(i));}
+  for(const [i,card]of [...hand.children].entries()){card.style.setProperty('--tilt','0deg');card.style.setProperty('--arc','0px');card.style.setProperty('--card-index',String(i));}
 }

@@ -201,6 +201,8 @@ pub struct Event {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Room {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub computer_due_at: Option<i64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub computers: Vec<String>,
     #[serde(default)]
@@ -224,6 +226,8 @@ pub struct Room {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomView {
+    pub computer_due_at: Option<i64>,
+    pub auction_calls: Vec<AuctionCall>,
     pub computers: Vec<String>,
     pub options: Option<crate::thousand::Settings>,
     pub id: String,
@@ -238,6 +242,15 @@ pub struct RoomView {
     pub latest_event_hash: Option<String>,
     pub deck: Option<DeckView>,
     pub table: Option<TableView>,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuctionCall {
+    pub seq: u64,
+    pub player: String,
+    pub kind: String,
+    pub amount: Option<u16>,
+    pub at: i64,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -19,3 +19,156 @@
 
 .computer-settings{grid-column:1/-1}
 #computer-note{margin:0;line-height:1.5;color:var(--muted)}
+
+/* The game is a viewport-sized table; history and trick inspection are overlays. */
+body.in-room{height:var(--app-height,100dvh);min-height:0;overflow:hidden}
+body.in-room main{height:var(--app-height,100dvh);width:min(100%,1060px);padding:8px 12px max(8px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:4px;min-height:0}
+body.in-room .app-header{padding:0;min-height:26px;flex:none}
+body.in-room .brand{font-size:12px;letter-spacing:2px}
+body.in-room #identity{font-size:12px}
+#room{flex:1;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:4px}
+#room .room-heading{margin:0;min-height:34px;gap:8px}
+.room-tools{display:flex;gap:6px;flex:none}
+#room .room-heading .eyebrow{font-size:9px;margin-bottom:3px;letter-spacing:1px}
+#room #room-code{font-size:16px}
+#room .icon-button{font-size:12px;padding:7px 9px;min-height:32px}
+#room .phase-bar{padding:1px 0 3px;max-width:none;min-height:23px;width:100%}
+#room #phase{font-size:12px;line-height:1.25}
+#room .deal-badge{font-size:10px}
+#room .table-shell{min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto auto;gap:4px}
+#room .table-rail{width:100%;height:100%;max-width:none;min-height:0;padding:5px;border-radius:42px}
+#room .felt{height:100%;min-height:0;padding:66px 8px 50px;border-radius:38px}
+#room[data-presentation=auction] .felt{padding-top:84px}
+#room .felt-line{inset:8px}
+#room #thousand-table{height:100%;min-height:0;display:flex;flex-direction:column;gap:4px}
+#room .table-hud{flex:none;min-height:19px;margin:0;gap:5px}
+#room .hud-pill{font-size:11px;padding:3px 7px;line-height:1.1}
+#room .table-center{flex:1;min-height:0;height:100%;gap:4px}
+#room .bid-emblem{display:none}
+#room .stock-display{display:flex;align-items:center;flex-direction:column;gap:5px}
+#room .stock-row{gap:8px}
+#room .stock-row .playing-card{width:clamp(68px,21vw,96px);height:auto}
+#room[data-presentation=auction] .stock-row .playing-card{width:clamp(52px,17vw,78px)}
+#room .stock-row .card-back{width:44px;height:auto;margin:0;transform:none}
+#room .stock-caption{font-size:10px;letter-spacing:1px}
+#room .seat{max-width:45%;gap:5px;padding:5px 7px;border-radius:11px;min-width:0}
+#room .seat-left{left:5px;top:7px}
+#room .seat-right{right:5px;top:7px}
+#room .seat-self{left:50%;bottom:5px;max-width:76%;top:auto}
+#room .seat-dealer{top:1px;left:50%;max-width:78%;padding:2px 7px;transform:translateX(-50%)}
+#room[data-player-count="4"] .seat-left,#room[data-player-count="4"] .seat-right{top:34px}
+#room[data-player-count="4"] .felt{padding-top:94px}
+#room[data-player-count="4"][data-presentation=auction] .felt{padding-top:112px}
+#room .seat-dealer .avatar,#room .seat-dealer .seat-hand,#room .seat-dealer .seat-role{display:none}
+#room .seat-dealer .seat-info{display:flex;align-items:center;gap:7px}
+#room .avatar{width:27px;height:27px;font-size:12px}
+#room .seat-name{font-size:12px;max-width:150px}
+#room .seat-score{font-size:11px;margin-top:2px;gap:4px;min-height:20px}
+#room .seat-score strong{font-size:13px}
+#room .seat-role{font-size:9px;margin-top:1px;letter-spacing:.4px}
+#room .seat-self .seat-role{margin-left:0;display:block}
+#room .seat-hand{background:none;border:0;box-shadow:none;color:#d1e1d4;display:inline-flex;align-items:center;gap:4px;padding:0 2px;margin-left:3px;height:24px;min-width:31px;font-size:12px}
+#room .seat-hand:disabled{opacity:1}
+#room .seat-hand .card-back{width:13px;height:18px;border-width:1px;border-radius:2px}
+#room .seat-hand .back-ornament{font-size:9px}
+#room .pile-available{color:var(--gold);font-size:13px}
+.call-bubble{position:absolute;top:calc(100% + 4px);left:8px;min-width:48px;max-width:150px;padding:5px 10px;border:1px solid #e5bc7360;border-radius:10px;background:#233f43;color:#fff2d7;font-size:14px;font-weight:700;white-space:nowrap;box-shadow:0 3px 8px #0004;z-index:10}
+.call-bubble:before{content:'';position:absolute;top:-5px;left:12px;width:8px;height:8px;background:#233f43;transform:rotate(45deg);border-left:1px solid #e5bc7360;border-top:1px solid #e5bc7360}
+.seat-self .call-bubble{top:auto;bottom:calc(100% + 5px);left:auto;right:8px}
+.seat-self .call-bubble:before{top:auto;bottom:-5px;transform:rotate(225deg)}
+.call-bubble.speaking{background:#efd198;color:#182e32;border-color:#efd198;animation:call-emphasis .3s ease-out}
+.call-bubble.speaking:before{background:#efd198}
+#room .trick-area{width:100%;height:100%;max-height:180px;min-height:0;gap:8px;margin:0}
+#room .trick-play{margin-top:0;--play-offset:0px;--play-angle:0deg}
+#room .trick-play:first-child{--play-angle:-4deg}
+#room .trick-play:nth-child(2){--play-angle:4deg;--play-offset:0px}
+#room .trick-play:nth-child(3){--play-angle:-2deg;--play-offset:0px}
+#room .trick-play .playing-card{width:clamp(58px,18vw,94px);height:auto}
+#room .trick-play small{top:-16px;font-size:10px;max-width:95px;overflow:hidden;text-overflow:ellipsis}
+#room .trick-countdown{left:15%;right:15%;bottom:0}
+#room .table-instruction{font-size:13px;line-height:1.3;margin:0}
+#room #table-actions{position:absolute;bottom:58px;left:8px;right:8px;gap:5px}
+#room #table-actions button{min-height:31px;font-size:12px;padding:6px 9px;margin:0}
+#room .hand-zone{width:100%;max-width:none;padding:0;margin:0;min-height:0}
+#room .hand-heading{height:22px;padding:0 2px;gap:8px}
+#room .hand-heading h3{font-size:11px;letter-spacing:.6px}
+#room .hand-heading h3 span{font-size:11px;margin-left:5px}
+#room .text-button{font-size:11px;padding:2px}
+#room .hand-content{display:flex;align-items:center;min-width:0;gap:8px}
+#room .hand{flex:1;min-width:0;height:clamp(104px,19vh,148px);min-height:0;padding:7px 4px;margin:0;align-items:center}
+#room .hand .card{transform:none;transition:filter .15s,box-shadow .15s}
+#room .hand .card.selected{transform:translateY(-4px);box-shadow:0 0 0 3px #f2ce87;z-index:30}
+#room .hand .card.is-unplayable{filter:saturate(.85) brightness(.87)}
+#room .hand .card:disabled{opacity:1}
+#incoming-zone:empty{display:none}
+#incoming-zone{display:flex;gap:6px;flex:none}
+.incoming-card{display:flex;flex-direction:column;align-items:center;gap:2px;background:#243c43;color:#e8e8d6;padding:6px;border:1px solid var(--gold);box-shadow:none;font-size:10px;max-width:120px}
+.incoming-card>.playing-card,.incoming-card>.card-back{width:62px;height:auto}
+.incoming-card>span:not(.playing-card):not(.card-back){font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.incoming-card small{font-size:9px;color:var(--gold)}
+#room .action-dock{width:100%;max-width:none;margin:0;padding:0;min-height:0;gap:5px;align-items:stretch}
+#room .action-dock>button{min-height:36px;max-width:none;flex:0 1 auto;padding:7px 11px;font-size:12px}
+#room .inline-form{min-width:128px;max-width:none;min-height:38px;padding:2px;flex:1}
+#room .inline-form input{width:36px;font-size:17px}
+#room .amount-step{width:20px;font-size:18px;padding:5px 2px}
+#room .inline-form>button[type=submit]{min-height:32px;font-size:12px;padding:6px 8px}
+#room .distribution-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:stretch;margin:0}
+#room .transfer-grid{gap:6px}
+#room .transfer-row{display:flex;flex-direction:column;gap:3px;padding:4px;min-width:0;border-color:#ffffff25}
+#room .transfer-row.active-target{border-color:var(--gold)}
+#room .transfer-target{display:flex;align-items:center;gap:5px;box-shadow:none;background:none;color:#d6e4da;padding:0;border:0;font-size:11px;min-width:0;text-align:left}
+#room .transfer-target .playing-card,#room .transfer-target .card-back{width:30px;height:42px;flex:none}
+#room .transfer-target>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#room .transfer-row label{display:flex;align-items:center;justify-content:space-between;font-size:11px;margin:0;gap:4px}
+#room .transfer-row input{width:17px;height:17px;padding:0;margin:0}
+#room .distribution-form>button{width:auto;margin:0;max-width:70px;padding:7px;font-size:12px;line-height:1.3;min-height:70px}
+#room .marriage-toggle[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
+#room .deal-summary h2{font-size:24px;margin:5px 0 8px}
+#room .result-scores{gap:12px}
+#room .result-score strong{font-size:24px;margin:3px 0}
+#room .result-score span,#room .result-score small{font-size:11px}
+body.in-room #notice{position:fixed;top:8px;left:12px;right:12px;max-width:700px;margin:auto;z-index:30;background:#24383f;font-size:12px}
+#resume-table{margin-bottom:14px}
+dialog{width:min(92vw,650px);max-height:calc(var(--app-height,100dvh) - 24px);padding:18px;border:1px solid #6f8b83;border-radius:18px;background:#172a35;color:#edf1eb;box-shadow:0 16px 80px #0008}
+dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
+.dialog-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dialog-heading h2{font-size:22px;margin:0}
+.dialog-heading button{padding:8px 12px;font-size:12px}
+.inspect-cards{display:flex;justify-content:center;gap:10px}
+.inspect-cards>div{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;font-size:12px}
+.inspect-cards .playing-card{width:clamp(70px,22vw,140px);height:auto}
+#record-dialog pre{font-size:11px;max-height:150px;overflow:auto}
+@keyframes call-emphasis{from{transform:scale(.85);opacity:.3}to{transform:scale(1);opacity:1}}
+@media(max-height:500px) and (min-aspect-ratio:1/1){
+  #room{grid-template-columns:minmax(0,1fr) minmax(220px,.75fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:'heading heading' 'phase phase' 'table hand' 'table actions'}
+  #room .room-heading{grid-area:heading}#room .phase-bar{grid-area:phase}#room .table-shell{display:contents}
+  #room .table-rail{grid-area:table}#room .hand-zone{grid-area:hand;align-self:end}#room .action-dock{grid-area:actions}
+  #room .hand{height:clamp(104px,40vh,150px)}#room .felt{padding-top:60px;padding-bottom:44px}
+  #room[data-presentation=auction] .felt{padding-top:78px}#room .stock-row .playing-card{width:64px}
+  #room[data-player-count="4"] .felt{padding-top:88px}
+  #room .trick-play .playing-card{width:64px}#room .seat{max-width:45%}
+}
+#room{grid-template-columns:minmax(0,1fr);min-width:0}
+#room .table-shell{grid-template-columns:minmax(0,1fr);min-width:0}
+#room .table-rail,#room .hand-zone,#room .action-dock,#room .room-heading{min-width:0}
+@media(max-height:500px) and (min-aspect-ratio:1/1){#room{grid-template-columns:minmax(0,1fr) minmax(220px,.75fr)}}
+#room .hand .card.selected{z-index:var(--card-index,0)}
+#room[data-player-count="4"] .seat-dealer{display:none}
+#room[data-player-count="4"] .seat-left,#room[data-player-count="4"] .seat-right{top:7px}
+#room[data-player-count="4"] .felt{padding-top:66px}
+#room[data-player-count="4"][data-presentation=auction] .felt{padding-top:84px}
+#room #game-title{max-width:210px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media(max-height:600px){
+  #room .felt,#room[data-player-count="4"] .felt{padding-top:58px;padding-bottom:41px}
+  #room[data-presentation=auction] .felt,#room[data-player-count="4"][data-presentation=auction] .felt{padding-top:80px}
+  #room .stock-caption{display:none}
+  #room .stock-row .playing-card{width:60px}
+  #room[data-presentation=auction] .stock-row .playing-card{width:52px}
+  #room .seat{padding-top:3px;padding-bottom:3px}
+  #room .seat-role{font-size:8px}#room .seat-score{min-height:18px}
+  #room .hand{height:100px}
+  #room .trick-play .playing-card{width:58px}
+}
+#room #table-actions{bottom:80px}
+#room .seat.has-trick{cursor:pointer}
+#room[data-presentation=distribution] .table-center>.table-instruction{display:none}
