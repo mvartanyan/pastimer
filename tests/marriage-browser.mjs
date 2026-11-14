@@ -1,0 +1,34 @@
+import {chromium} from 'playwright';
+import {spawn} from 'node:child_process';
+import {once} from 'node:events';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {existsSync} from 'node:fs';
+import assert from 'node:assert/strict';
+
+// Controlled view/command fixtures isolate the UI defaults. Real rule legality,
+// card ownership and audit replay are covered by the complete game suites.
+const directory=await mkdtemp(join(tmpdir(),'pastimer-marriage-'));
+const server=spawn(resolve('target/debug/pastimer'),[],{env:{...process.env,DATABASE_PATH:join(directory,'test.sqlite'),DEV_AUTH:'1',PASTIMER_ENV:'development',HOST:'127.0.0.1',PORT:'0'},stdio:['ignore','pipe','inherit']});
+let browser;
+try{
+  const base=await new Promise((resolve,reject)=>{let output='';server.stdout.on('data',chunk=>{output+=chunk;const m=output.match(/Pastimer listening on (http:\/\/[^\s]+)/);if(m)resolve(m[1]);});server.once('error',reject);});
+  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),headless:true});
+  const context=await browser.newContext({viewport:{width:390,height:650}});await context.route('https://telegram.org/**',r=>r.abort());const page=await context.newPage();await page.goto(base);await page.getByLabel('Your name').fill('Marriage regression');await page.getByRole('button',{name:'Continue locally'}).click();await page.getByRole('button',{name:'Create a table'}).waitFor();
+  await page.getByLabel('Computer seats').selectOption('2');await page.getByRole('button',{name:'Create a table'}).click();await page.locator('#room-code').waitFor();const code=await page.locator('#room-code').textContent();await page.getByRole('button',{name:'Start game',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#room').dataset.phase==='awaitShuffle');
+  const initial=await page.evaluate(async code=>await(await fetch(`/api/rooms/${code}`)).json(),code),me=initial.host;
+  let fixture,commands=[];
+  const reset=()=>{fixture=structuredClone(initial);fixture.version+=100+commands.length;Object.assign(fixture.table,{phase:'trick',deal:1,contractor:me,turn:me,hand:['KH','QH','KS','QS','AS','KC','QC'],trump:null,plays:[],closeAt:null,serverNow:Date.now(),deliveries:[],playedCards:[],controls:{shuffle:false,pass:false,here:false,bidMin:null,bidMax:380,takeStock:false,recipients:[],order:false,dismiss:false,fourNines:false,legalCards:['KH','QH','KS','QS','AS','KC','QC'],announceCards:['KH','QH','KS','QS','KC','QC']}});};reset();
+  await page.route(`**/api/rooms/${code}`,r=>r.fulfill({json:fixture}));
+  await page.route(`**/api/rooms/${code}/commands`,async route=>{const body=route.request().postDataJSON(),play=body.action.action;commands.push(play);fixture=structuredClone(fixture);fixture.version++;fixture.table.hand=fixture.table.hand.filter(c=>c!==play.card);fixture.table.controls.legalCards=[];fixture.table.controls.announceCards=[];fixture.table.turn=fixture.computers[0];fixture.table.plays=[{player:me,card:play.card}];if(play.announce)fixture.table.trump=play.card.slice(-1);await route.fulfill({json:fixture});});
+  await page.reload();await page.getByRole('button',{name:'Announce ♥ +100',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Announce ♥ +100',exact:true}).getAttribute('aria-pressed'),'true');assert.equal(await page.getByRole('button',{name:'Announce ♠ +40',exact:true}).getAttribute('aria-pressed'),'true','All eligible suits default on');
+  for(const viewport of [{width:320,height:480},{width:320,height:568},{width:390,height:650},{width:430,height:932},{width:568,height:320},{width:844,height:390},{width:1024,height:768}]){await page.setViewportSize(viewport);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));const bad=await page.evaluate(()=>[...document.querySelectorAll('#game-actions button,.trump-marker,#hand .card')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&(r.left<0||r.right>innerWidth+.5||r.top<0||r.bottom>innerHeight+.5);}).map(e=>e.className));assert.deepEqual(bad,[],'Multiple marriage options stay inside the screen');}await page.setViewportSize({width:390,height:650});
+  await page.locator('#hand [data-card=KH]').click({position:{x:8,y:18}});await page.locator('.trump-marker[data-trump=H]').waitFor();assert.deepEqual(commands.at(-1),{type:'play',card:'KH',announce:true});assert.equal(await page.locator('.marriage-rings ellipse').count(),2);assert.equal(await page.locator('.trump-suit').textContent(),'♥');
+  for(const viewport of [{width:320,height:480},{width:320,height:568},{width:390,height:650},{width:430,height:932},{width:568,height:320},{width:844,height:390},{width:1024,height:768}]){await page.setViewportSize(viewport);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));assert.equal(await page.locator('.trump-marker').isVisible(),true);const bad=await page.evaluate(()=>[...document.querySelectorAll('.trump-marker,#hand .card,#thousand-table .playing-card')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&(r.left<0||r.right>innerWidth+.5||r.top<0||r.bottom>innerHeight+.5);}).map(e=>e.className));assert.deepEqual(bad,[]);}
+  await page.setViewportSize({width:390,height:650});await page.screenshot({path:'/tmp/pastimer-hearts-trump.png'});
+  reset();await page.reload();const toggle=page.getByRole('button',{name:'Announce ♥ +100',exact:true});await toggle.waitFor();await toggle.click();assert.equal(await toggle.getAttribute('aria-pressed'),'false');await page.locator('#hand [data-card=KH]').click({position:{x:8,y:18}});await page.waitForFunction(()=>document.querySelectorAll('#hand .card').length===6);assert.equal(commands.at(-1).announce,false,'Explicit opt-out is respected');
+  reset();await page.reload();await toggle.waitFor();await toggle.click();fixture.version++;await page.waitForFunction(()=>document.querySelector('.marriage-toggle').getAttribute('aria-pressed')==='true');
+  fixture=structuredClone(fixture);fixture.version++;fixture.table.controls.announceCards=[];await page.waitForFunction(()=>!document.querySelector('.marriage-toggle'));await page.locator('#hand [data-card=KH]').click({position:{x:8,y:18}});await page.waitForFunction(()=>document.querySelectorAll('#hand .card').length===6);assert.equal(commands.at(-1).announce,false,'Ineligible courts never announce automatically');
+  console.log('PASS: marriage UI fixtures - hearts/spades default on, direct-play announce, optional opt-out, next-turn reset, ineligible courts, prominent rings/suit at seven viewports');
+}finally{if(browser)await browser.close();if(server.exitCode===null){const exited=once(server,'exit');server.kill('SIGTERM');await exited;}await rm(directory,{recursive:true,force:true});}

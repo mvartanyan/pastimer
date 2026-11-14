@@ -83,7 +83,11 @@ try{
       for(let i=0;i<24;i++){
         room=await read(host);const page=byId.get(room.table.turn);assert.ok(page);
         if(i===0)await page.route('**/api/rooms/*/commands',async route=>{await route.fetch();await route.abort();},{times:1});
-        await act(page,page.locator('#hand .card:not(:disabled)').first());assert.equal(await page.getByRole('button',{name:'Play selected card',exact:true}).count(),0);
+        const own=await read(page),marriage=own.table.controls.announceCards.find(c=>c.endsWith('H'))??own.table.controls.announceCards[0];
+        if(marriage)assert.equal(await page.locator('.marriage-toggle[aria-pressed=true]').count()>0,true);
+        await act(page,marriage?page.locator(`#hand .card[data-card="${marriage}"]`):page.locator('#hand .card:not(:disabled)').first());assert.equal(await page.getByRole('button',{name:'Play selected card',exact:true}).count(),0);
+        if(marriage){const after=await read(page);assert.equal(after.table.trump,marriage.slice(-1));assert.equal(await page.locator('.trump-marker').getAttribute('data-trump'),marriage.slice(-1));}
+
         if(i===0){await page.getByRole('button',{name:'Retry previous move'}).waitFor();await page.reload();await page.getByRole('button',{name:'Retry previous move'}).click();await page.getByRole('button',{name:'Retry previous move'}).waitFor({state:'hidden'});}
         if(i===2){await layouts(page);await page.screenshot({path:'/tmp/pastimer-trick.png'});}else await fits(page);assert.equal(await page.locator('.stock-display').count(),0);
         if(i%3===2){const closing=await read(page);assert.equal(closing.table.phase,'closing');await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>v,closing.version,{timeout:6500});}

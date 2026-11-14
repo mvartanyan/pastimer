@@ -5,7 +5,7 @@ const symbols={H:'♥',D:'♦',C:'♣',S:'♠'};
 let timer,formKey='',draft={},current,openPile=null,drag=null,suppressClickUntil=0;
 const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'{}');}catch{return {};}};
 const deliveryKey=(room,me)=>`pastimer-deliveries:${me.id}:${room.id}:${room.table.deal}`;
-function prepare(room){const key=`${room.id}:${room.table.deal}:${room.table.phase}`;if(key!==formKey){formKey=key;draft={transfers:{},target:0,announce:null};}}
+function prepare(room){const key=`${room.id}:${room.table.deal}:${room.table.phase}`;if(key!==formKey){formKey=key;draft={transfers:{},target:0,announce:{},announceVersion:room.version};}if(draft.announceVersion!==room.version){draft.announce={};draft.announceVersion=room.version;}}
 export function incoming(room,me){
   // Receipt acknowledgment precedes the recipient's first play. Reopening a
   // later trick must not resurrect historical transfers or already played cards.
@@ -80,7 +80,7 @@ export function handCard(code,{room,me,send,run,repaint}){
     placeCard(room,code,(c.recipients[draft.target??0]??c.recipients[0]).id);
     repaint();return;
   }
-  if(c.legalCards.includes(code))run(()=>send({type:'play',card:code,announce:c.announceCards.includes(code)&&draft.announce===code.slice(-1)}));
+  if(c.legalCards.includes(code))run(()=>send({type:'play',card:code,announce:c.announceCards.includes(code)&&draft.announce[code.slice(-1)]!==false}));
 }
 export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,now}){
   clearTimeout(timer);prepare(room);current={room,me};const t=room.table,c=t.controls;
@@ -103,7 +103,9 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
   const status={awaitShuffle:`${name(t.dealer)} deals next.`,auction:ending?'Auction complete.':`${t.turn===me.id?'Your turn':name(t.turn)+"'s turn"} to bid.`,stock:`${name(t.contractor)} takes the stock.`,distribution:c.recipients.length?'Give one card to each hand.':`${name(t.contractor)} is giving cards.`,preparation:`${name(t.contractor)} sets the contract.`,trick:t.turn===me.id?'Your turn - tap a card to play.':`${name(t.turn)} is playing.`,closing:'Trick complete.',finished:'The match is complete.'};
   $('phase').textContent=status[phase];
   $('thousand-table').hidden=false;$('thousand-table').replaceChildren();
-  const hud=node('div','','table-hud');hud.append(node('span',`Trump ${t.trump?symbols[t.trump]:'none'}`,'hud-pill'));
+  const hud=node('div','','table-hud'),trump=node('div','','trump-marker');trump.dataset.trump=t.trump??'none';trump.setAttribute('aria-label',t.trump?`Current trump: ${{H:'hearts',D:'diamonds',C:'clubs',S:'spades'}[t.trump]}`:'No trump');
+  if(t.trump){const rings=node('span','','marriage-rings');rings.setAttribute('aria-hidden','true');rings.innerHTML='<svg viewBox="0 0 72 46" fill="none"><ellipse cx="26" cy="23" rx="20" ry="12" transform="rotate(-36 26 23)" stroke="#e5bc73" stroke-width="4"/><ellipse cx="46" cy="23" rx="20" ry="12" transform="rotate(36 46 23)" stroke="#f4d99e" stroke-width="4"/></svg>';const mark=node('span',symbols[t.trump],`trump-suit suit-${t.trump}`);mark.setAttribute('aria-hidden','true');trump.append(rings,mark);}else trump.append(node('span','NO TRUMP'));
+  hud.append(trump);
   hud.append(node('span',t.contractor&&!ending?`${name(t.contractor)} - contract ${t.order}`:`Bid ${t.order}`,'hud-pill'));$('thousand-table').append(hud);
   const center=node('div','','table-center');
   function stock(){const box=node('div','','stock-display'),cards=node('div','','stock-row');cards.setAttribute('aria-label',t.stock?'Opened stock':'Sealed stock');for(let i=0;i<3;i++)cards.append(t.stock?playingCard(t.stock[i]):cardBack());box.append(cards,node('span',t.stock?'OPEN STOCK':'STOCK','stock-caption'));return box;}
@@ -158,6 +160,7 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
   const arrivals=incoming(room,me);$('incoming-zone').replaceChildren();
   for(const gift of arrivals){const button=node('button','','incoming-card');button.type='button';button.dataset.transfer=String(gift.id);button.setAttribute('aria-label',gift.stage?`Add ${cardName(gift.card)} to your hand`:'Reveal secret card');button.append(gift.stage?playingCard(gift.card):cardBack());button.onclick=()=>{const saved=read(deliveryKey(room,me));saved[gift.id]=gift.stage?2:1;localStorage.setItem(deliveryKey(room,me),JSON.stringify(saved));repaint();};$('incoming-zone').append(button);}
   if(arrivals.length){$('phase').textContent='Your card.';for(const control of $('game-actions').querySelectorAll('button,input'))control.disabled=true;}
-  if(c.announceCards.length&&!arrivals.length){const suits=[...new Set(c.announceCards.map(card=>card.slice(-1)))];for(const suit of suits){const toggle=node('button',`Announce ${symbols[suit]} +${{H:100,D:80,C:60,S:40}[suit]}`,'secondary marriage-toggle');toggle.setAttribute('aria-pressed',String(draft.announce===suit));toggle.onclick=()=>{draft.announce=draft.announce===suit?null:suit;repaint();};$('game-actions').append(toggle);}}
+  if(c.announceCards.length&&!arrivals.length){const suits=[...new Set(c.announceCards.map(card=>card.slice(-1)))];for(const suit of suits){const toggle=node('button',`Announce ${symbols[suit]} +${{H:100,D:80,C:60,S:40}[suit]}`,'secondary marriage-toggle');toggle.setAttribute('aria-pressed',String(draft.announce[suit]!==false));toggle.onclick=()=>{draft.announce[suit]=draft.announce[suit]===false;repaint();};$('game-actions').append(toggle);}}
+  for(const card of $('hand').children){const announce=c.announceCards.includes(card.dataset.card)&&draft.announce[card.dataset.card.slice(-1)]!==false;card.classList.toggle('announces-marriage',announce);if(announce)card.setAttribute('aria-description','Announces the marriage and changes trump');}
   $('audit').disabled=t.auditDeals===0;$('audit').textContent=t.auditDeals?'Download audit':'No completed deal yet';
 }

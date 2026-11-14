@@ -176,3 +176,12 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 #room[data-presentation=distribution] .table-center>.table-instruction{display:none}
 
 #room[data-presentation=distribution] .table-hud{visibility:hidden}
+
+#room .trump-marker{display:flex;align-items:center;justify-content:center;flex:none;gap:4px;min-height:35px;padding:0 5px;border:1px solid #e5bc7380;border-radius:10px;background:#132f2dbf;color:#f4d99e;font-size:11px;font-weight:800;letter-spacing:1px}
+#room .trump-marker[data-trump=none]{border-color:#ffffff20;color:#adc4bb;font-size:10px;min-height:27px}
+.marriage-rings{display:flex}.marriage-rings svg{width:54px;height:35px;filter:drop-shadow(0 1px 2px #0007)}
+#room .trump-suit{font:38px/1 Georgia,serif;color:#f7f1df;text-shadow:0 1px 3px #0008}
+#room .trump-suit.suit-H,#room .trump-suit.suit-D{color:#ff7c83}
+#room .table-hud>.hud-pill{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#room .hand .card.announces-marriage{box-shadow:0 0 0 2px var(--gold),0 0 12px #e5bc7380}
+@media(max-height:500px){.marriage-rings svg{width:44px;height:29px}#room .trump-suit{font-size:31px}#room .trump-marker{min-height:30px}}
