@@ -1,5 +1,7 @@
 # Deploying Pastimer on Horse / k3s
 
+Status on 2026-11-14: deployment assets are prepared, but Horse deployment and real Telegram validation are pending. Horse's established SSH/k3s configuration is in the owner's separate local **k3s horse** project. Consult that project before selecting the cluster context, architecture, domain, ingress/certificate settings or storage. See [the handoff](handoff.md) for the full current state. Rebuild the latest checkout for deployment; the earlier cloud test image predates the card-table UI redesign.
+
 The application runs as one replica with a persistent SQLite volume. The deployment uses Recreate updates so old and new pods do not write the database concurrently. The manifests create only the `pastimer` namespace and its application resources. Keep the cluster's existing ingress, certificate issuer and storage configuration.
 
 ## Container image

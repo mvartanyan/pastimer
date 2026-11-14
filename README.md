@@ -2,6 +2,8 @@
 
 A Rust server for multiplayer Telegram card games, with SQLite persistence and a shared Mini App. **Thousand / тысяча is the first complete game**, with the agreed house rules for three or four players. See the [English rules](docs/thousand-rules.md) or [русские правила](docs/thousand-rules.ru.md). `high-card-demo` is a five-round infrastructure exercise for 2–4 players.
 
+Starting a new session? Read the [handoff](docs/handoff.md) for implementation status, source map, local setup, validation and the remaining Horse deployment work. [AGENTS.md](AGENTS.md) records project conventions; the [screenshot gallery](docs/screenshots/README.md) shows the current UI.
+
 ## Run
 
 Install the Rust toolchain pinned in `rust-toolchain.toml` (1.93.1, with rustfmt and Clippy), a C compiler and pkg-config. SQLx builds its bundled SQLite; no external database service is required.
@@ -69,7 +71,7 @@ Rust tests cover complete Thousand matches, the attainable 380-point maximum, ba
 Optional browser test (Node.js 22+):
 
 ```sh
-npm ci --cache /workspace/.npm-cache
+npm ci
 # Use system Chromium, set CHROMIUM_PATH, or install Playwright Chromium:
 # npx playwright install chromium
 npm run test:browser
@@ -121,3 +123,5 @@ node scripts/capture-screenshots.mjs
 ```
 
 The helper starts an isolated server, drives real game actions, and writes bidding, distribution, trick-play and collected-trick views to `artifacts/screenshots/`. These are browser previews, not captures from a live Telegram client.
+
+Reviewed previews are also committed in [docs/screenshots/](docs/screenshots/README.md) for local sessions and repository browsing.
