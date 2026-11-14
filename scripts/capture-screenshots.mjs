@@ -12,9 +12,17 @@ function initData(id,name){const fields=new URLSearchParams({auth_date:String(Ma
 const directory=await mkdtemp(join(tmpdir(),'pastimer-thousand-')),binary=process.env.PASTIMER_BIN||resolve('target/debug/pastimer');
 const server=spawn(binary,[],{env:{...process.env,DATABASE_PATH:join(directory,'test.sqlite'),DEV_AUTH:'0',TELEGRAM_BOT_TOKEN:botToken,PASTIMER_ENV:'development',NODE_ENV:'development',HOST:'127.0.0.1',PORT:'0'},stdio:['ignore','pipe','inherit']});
 let browser;
+async function dragCard(page,card,target,touch=false,cancel=false){
+  const source=await card.boundingBox(),destination=await target.boundingBox();assert.ok(source&&destination);
+  const start={x:source.x+8,y:source.y+18},end={x:destination.x+destination.width/2,y:destination.y+destination.height/2};
+  if(touch){const session=await page.context().newCDPSession(page);await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1}]});for(let i=1;i<=12;i++)await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+(end.x-start.x)*i/12,y:start.y+(end.y-start.y)*i/12,id:1}]});await session.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});await session.detach();}
+  else{await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:12});await page.mouse.up();}
+  assert.equal(await page.locator('.transfer-drag').count(),0,'Drag ghost is removed after dropping');
+}
+
 async function fits(page){
   const bad=await page.evaluate(()=>{
-    const nodes=[document.getElementById('room'),...document.querySelectorAll('#hand .card,#game-actions button,#thousand-table .playing-card,.incoming-card')];
+    const nodes=[document.getElementById('room'),...document.querySelectorAll('#hand .card,#game-actions button,#table-actions button,#thousand-table .playing-card,.incoming-card,.seat-transfer')];
     return nodes.filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&(r.left<-.5||r.right>innerWidth+.5||r.top<-.5||r.bottom>innerHeight+.5);}).map(e=>({tag:e.tagName,cls:e.className,rect:JSON.stringify(e.getBoundingClientRect())}));
   });if(bad.length){await page.screenshot({path:'/tmp/pastimer-fit-failure.png',fullPage:true});console.log('FIT',await page.evaluate(()=>({width:innerWidth,height:innerHeight,hand:document.getElementById('hand').getBoundingClientRect().toJSON(),overlap:document.getElementById('hand').style.getPropertyValue('--overlap'),card:document.getElementById('hand').style.getPropertyValue('--card-width'),room:document.getElementById('room').getBoundingClientRect().toJSON()})));}assert.deepEqual(bad,[],'Normal gameplay controls and cards must fit the visible screen');
 }
@@ -24,7 +32,7 @@ try{
   for(const count of [3]){
     const contexts=[],pages=[],byId=new Map(),errors=[];
     for(let i=0;i<count;i++){
-      const context=await browser.newContext({viewport:{width:390,height:650}});contexts.push(context);await context.route('https://telegram.org/**',r=>r.abort());
+      const context=await browser.newContext({viewport:{width:390,height:650},hasTouch:true});contexts.push(context);await context.route('https://telegram.org/**',r=>r.abort());
       await context.addInitScript(data=>{window.Telegram={WebApp:{initData:data,ready(){},expand(){}}};},initData(10001+i,['Миша','Аня','Саша'][i]));
       const page=await context.newPage();pages.push(page);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.getByRole('button',{name:'Create a table'}).waitFor();
       const me=await page.evaluate(async()=>await(await fetch('/api/me')).json());byId.set(me.id,page);
@@ -46,9 +54,17 @@ try{
     assert.equal(await owner.locator('.stock-row .playing-card').count(),3);assert.ok((await owner.locator('.stock-row .playing-card').first().boundingBox()).width>=65);await layouts(owner);await owner.screenshot({path:'/tmp/pastimer-open-stock.png'});
     await act(owner,owner.getByRole('button',{name:'Take stock',exact:true}));assert.equal(await owner.locator('.stock-display').count(),0,'Taken stock disappears');
     const give=owner.getByRole('button',{name:'Give two cards',exact:true});assert.equal(await give.isDisabled(),true);
-    await owner.locator('#hand .card').nth(0).click({position:{x:8,y:18}});assert.equal(await owner.locator('#hand .selected').count(),1);await owner.locator('#hand .card').nth(0).click({position:{x:8,y:18}});assert.equal(await give.isDisabled(),true);
-    await owner.locator('#hand .card').nth(0).click({position:{x:8,y:18}});await owner.locator('#hand .card').nth(1).click({position:{x:8,y:18}});assert.equal(await owner.locator('#hand .selected').count(),2);assert.equal(await give.isEnabled(),true);assert.equal(await owner.locator('.distribution-form select').count(),0);
-    await owner.locator('.transfer-row input[type=checkbox]').first().check();await layouts(owner);await owner.screenshot({path:join(output,'02-distribution.png')});await act(owner,give);room=await read(owner);
+    const targets=owner.locator('[data-recipient] .seat-hand');assert.equal(await targets.count(),2);
+    assert.equal(await owner.locator('.distribution-form,.transfer-grid').count(),0,'No separate distribution panel');
+    const firstCard=await owner.locator('#hand .card').first().getAttribute('data-card');
+    await dragCard(owner,owner.locator('#hand .card').first(),owner.locator('#phase'));assert.equal(await owner.locator('#hand .card').count(),10,'Invalid drops keep the card');
+    await dragCard(owner,owner.locator('#hand .card').first(),targets.nth(0),true,true);assert.equal(await owner.locator('#hand .card').count(),10,'Cancelled touch gestures keep the card');
+    await dragCard(owner,owner.locator('#hand .card').first(),targets.nth(0));assert.equal(await owner.locator('.seat-transfer').count(),1);assert.equal(await owner.locator('#hand .card').count(),9);assert.equal(await give.isDisabled(),true);
+    await dragCard(owner,owner.locator('.seat-transfer').first(),owner.locator('#hand'));assert.equal(await owner.locator('.seat-transfer').count(),0);assert.equal(await owner.locator('#hand .card').count(),10,'Drag back to hand cancels the transfer');
+    await dragCard(owner,owner.locator(`#hand .card[data-card="${firstCard}"]`),targets.nth(0));
+    await dragCard(owner,owner.locator('#hand .card').first(),targets.nth(1),true);assert.equal(await owner.locator('.seat-transfer').count(),2,'Touch and mouse both stage cards');assert.equal(await owner.locator('#hand .card').count(),8);assert.equal(await give.isEnabled(),true);
+    const face=owner.locator('.seat-transfer').first();assert.equal(await face.getAttribute('data-visibility'),'secret');await face.click();assert.equal(await face.getAttribute('data-visibility'),'open');await face.click();assert.equal(await face.getAttribute('data-visibility'),'secret');await face.click();assert.equal(await face.getAttribute('data-visibility'),'open');
+    await layouts(owner);await owner.screenshot({path:join(output,'02-distribution.png')});await act(owner,give);room=await read(owner);
     let secretReceipts=0,publicReceipts=0;
     for(const page of pages){
       const own=await read(page),myId=[...byId].find(([,p])=>p===page)?.[0];
@@ -78,7 +94,7 @@ try{
     }
     const audit=await host.evaluate(async code=>await(await fetch(`/api/rooms/${code}/audit`)).json(),code);const file=join(directory,`audit-${count}.json`);await writeFile(file,JSON.stringify(audit));const verified=JSON.parse(execFileSync(join(dirname(binary),'verify-audit'),[file],{encoding:'utf8'}));assert.equal(verified.valid,true);assert.equal(verified.deals,1);
     // A fresh Mini App browser window has neither sessionStorage nor localStorage.
-    const state=await contexts[0].storageState(),fresh=await browser.newContext({viewport:{width:390,height:650},storageState:{cookies:state.cookies,origins:[]}});await fresh.route('https://telegram.org/**',r=>r.abort());const reopened=await fresh.newPage();await reopened.goto(base);await reopened.locator('#room-code').waitFor({state:'visible'});assert.equal(await reopened.locator('#room-code').textContent(),code,'Server membership reconnects a fresh window');assert.equal((await read(reopened)).table.auditDeals,1);await fits(reopened);await fresh.close();assert.deepEqual(errors,[]);
+    const state=await contexts[0].storageState(),fresh=await browser.newContext({viewport:{width:390,height:650},hasTouch:true,storageState:{cookies:state.cookies,origins:[]}});await fresh.route('https://telegram.org/**',r=>r.abort());const reopened=await fresh.newPage();await reopened.goto(base);await reopened.locator('#room-code').waitFor({state:'visible'});assert.equal(await reopened.locator('#room-code').textContent(),code,'Server membership reconnects a fresh window');assert.equal((await read(reopened)).table.auditDeals,1);await fits(reopened);await fresh.close();assert.deepEqual(errors,[]);
     console.log(`Saved four updated mobile previews in ${output}; signed synthetic identities, real game and verified audit.`);
     for(const context of contexts)await context.close();
   }

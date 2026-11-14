@@ -7,7 +7,7 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | Situation | Screenshot |
 | --- | --- |
 | Bidding and sealed stock | [01-bidding.png](01-bidding.png) |
-| Choosing cards to give, with independent visibility | [02-distribution.png](02-distribution.png) |
+| Cards dragged to recipient hands, with tap-to-turn visibility | [02-distribution.png](02-distribution.png) |
 | A completed trick before its three-second collection | [03-playing-a-trick.png](03-playing-a-trick.png) |
 | Last captured trick opened from a player seat | [04-collected-tricks.png](04-collected-tricks.png) |
 | Highlighted secret receipt with no instructional text | [05-incoming-card.png](05-incoming-card.png) |

@@ -112,16 +112,18 @@ body.in-room #identity{font-size:12px}
 #room .inline-form input{width:36px;font-size:17px}
 #room .amount-step{width:20px;font-size:18px;padding:5px 2px}
 #room .inline-form>button[type=submit]{min-height:32px;font-size:12px;padding:6px 8px}
-#room .distribution-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:stretch;margin:0}
-#room .transfer-grid{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
-#room .transfer-row{display:flex;flex-direction:column;gap:3px;padding:4px;min-width:0;align-items:stretch;border-color:#ffffff25}
-#room .transfer-row.active-target{border-color:var(--gold)}
-#room .transfer-target{display:flex;align-items:center;gap:5px;box-shadow:none;background:none;color:#d6e4da;padding:0;border:0;font-size:11px;min-width:0;width:100%;text-align:left}
-#room .transfer-target .playing-card,#room .transfer-target .card-back{width:30px;height:42px;flex:none}
-#room .transfer-target>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#room .transfer-row label{display:flex;align-items:center;justify-content:space-between;font-size:11px;margin:0;gap:4px}
-#room .transfer-row input{width:17px;height:17px;padding:0;margin:0}
-#room .distribution-form>button{width:auto;margin:0;max-width:70px;padding:7px;font-size:12px;line-height:1.3;min-height:70px}
+#room[data-phase=distribution] #hand .card,.seat-transfer{touch-action:none;user-select:none;-webkit-user-select:none}
+#room .transfer-recipient{outline:1px dashed #e5bc7370;outline-offset:2px}
+#room .transfer-recipient .seat-hand{color:var(--gold);cursor:pointer}
+#room .transfer-recipient.drop-hover{outline:3px solid var(--gold);background:#4c6050}
+#room .seat-transfer{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);display:flex;align-items:center;padding:3px;border:1px solid var(--gold);border-radius:8px;background:#233d3b;box-shadow:0 2px 8px #0005;z-index:12}
+#room .seat-transfer:active{transform:translateX(-50%)}
+#room .seat-transfer>.playing-card,#room .seat-transfer>.card-back{width:clamp(40px,12vw,60px);height:auto;margin:0}
+#room .seat-transfer[data-visibility=open]{box-shadow:0 0 0 2px #e5bc7340}
+#room .hand.drop-hover{outline:2px solid var(--gold);outline-offset:-2px;border-radius:8px}
+.is-dragging{opacity:.3!important}
+.transfer-drag{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-75%);filter:drop-shadow(0 8px 8px #0008)}
+.transfer-drag>.playing-card,.transfer-drag>.card-back{width:76px;height:auto;margin:0;transform:rotate(-4deg)}
 #room .marriage-toggle[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
 #room .deal-summary h2{font-size:24px;margin:5px 0 8px}
 #room .result-scores{gap:12px}
@@ -172,3 +174,5 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 #room #table-actions{bottom:80px}
 #room .seat.has-trick{cursor:pointer}
 #room[data-presentation=distribution] .table-center>.table-instruction{display:none}
+
+#room[data-presentation=distribution] .table-hud{visibility:hidden}

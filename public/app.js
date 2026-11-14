@@ -1,4 +1,4 @@
-import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick} from '/thousand.js';
+import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick,bindDistributionDrag} from '/thousand.js';
 import {playingCard,cardBack,sortedHand,layoutHand} from '/cards.js';
 const $ = id => document.getElementById(id);
 let me, room, busy = false, refreshing = false, serverOffset=0;
@@ -52,7 +52,7 @@ function renderSeats(){
     const seat=room.table?.seats?.find(s=>s.id===p.id),isMe=p.id===me.id,isTurn=room.table?.turn===p.id,pile=room.table?.piles?.find(v=>v.player===p.id);
     let position=isMe?'seat-self':activeOthers.indexOf(p)===0?'seat-left':activeOthers.indexOf(p)===1?'seat-right':'seat-self';
     if(p.id===inactive)position='seat-dealer';
-    const box=element('div','',`seat ${position}${isTurn?' is-turn':''}${pile?.top?' has-trick':''}`);box.dataset.player=p.id;if(pile?.top){box.title=`Inspect the last trick won by ${p.name}`;box.onclick=e=>{if(!e.target.closest('.seat-hand'))inspectTrick(room,p.id);};}
+    const box=element('div','',`seat ${position}${isTurn?' is-turn':''}${pile?.top?' has-trick':''}`);box.dataset.player=p.id;if(pile?.top){box.title=`Inspect the last trick won by ${p.name}`;box.onclick=e=>{if(!box.dataset.recipient&&!e.target.closest('.seat-hand'))inspectTrick(room,p.id);};}
     const avatar=element('span',room.computers?.includes(p.id)?'C':p.name.trim().slice(0,1).toUpperCase(),'avatar');avatar.style.setProperty('--avatar-color',colors[index%colors.length]);
     const info=element('div','','seat-info');info.append(element('div',p.name+(isMe?' - you':''),'seat-name'));
     const score=element('div','','seat-score');score.append(element('strong',String(seat?.score??room.scores[p.id]??0)),element('span','pts'));
@@ -75,8 +75,9 @@ function render(next) {
   if(room.phase==='lobby'&&room.host===me.id){const start=button('Start game',()=>command({type:'start'}));start.disabled=room.players.length<(room.options?.playerCount??2);$('table-actions').append(start);}
   if(room.phase==='committing'&&!room.deck.acknowledgements.includes(me.id))$('table-actions').append(button('Save & acknowledge deck',async()=>{saveReceipt();await command({type:'acknowledge',shuffleId:room.deck.shuffleId,commitment:room.deck.commitment});}));
   const gifts=room.table?.kind==='thousand'?incoming(room,me):[],held=new Set(gifts.map(g=>g.card));
-  const hand=sortedHand((room.table?.hand??[]).filter(c=>!held.has(c)),sortMode,room.game),chosen=room.table?.kind==='thousand'?selectedTransfers(room):[];
-  $('hand-zone').hidden=hand.length===0&&gifts.length===0;$('hand-count').textContent=`${room.table?.hand?.length??0} cards`;
+  const chosen=room.table?.kind==='thousand'?selectedTransfers(room):[];
+  const hand=sortedHand((room.table?.hand??[]).filter(c=>!held.has(c)&&!chosen.includes(c)),sortMode,room.game);
+  $('hand-zone').hidden=hand.length===0&&gifts.length===0;$('hand-count').textContent=`${(room.table?.hand?.length??0)-chosen.length} cards`;
   $('room').dataset.receiving=String(gifts.length>0);$('sort-hand').hidden=gifts.length>0;
   $('sort-hand').textContent=`Sort: ${sortMode}`;$('sort-hand').setAttribute('aria-label',`Sort hand by ${sortMode==='suit'?'rank':'suit'}`);
   $('incoming-zone').replaceChildren();
@@ -87,6 +88,7 @@ function render(next) {
   if(room.table?.kind==='thousand'){
     renderThousand({room,me,send:action=>command({type:'thousand',action}),refresh:refreshRoom,sendPlatform:action=>command(action),run,repaint,now:()=>Date.now()+serverOffset});
     for(const card of $('hand').children){card.disabled=gifts.length>0||(!room.table.controls.recipients.length&&!room.table.controls.legalCards.includes(card.dataset.card));card.classList.toggle('is-unplayable',room.table.turn===me.id&&card.disabled);}
+    bindDistributionDrag({room,repaint});
     $('commitment').textContent=room.deck?`Deal ${room.table.deal} · SHA-256 ${room.deck.commitment}`:'The dealer will publish the deck hash before dealing.';
   }else{
     for(const card of $('hand').children)card.disabled=!(room.table?.actions??[]).some(a=>a.input==='card');

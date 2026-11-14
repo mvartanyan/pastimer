@@ -2,7 +2,7 @@ import {playingCard,cardBack,cardName} from '/cards.js';
 const $=id=>document.getElementById(id);
 const node=(tag,text='',className='')=>{const e=document.createElement(tag);e.textContent=text;if(className)e.className=className;return e;};
 const symbols={H:'♥',D:'♦',C:'♣',S:'♠'};
-let timer,formKey='',draft={},current,openPile=null;
+let timer,formKey='',draft={},current,openPile=null,drag=null,suppressClickUntil=0;
 const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'{}');}catch{return {};}};
 const deliveryKey=(room,me)=>`pastimer-deliveries:${me.id}:${room.id}:${room.table.deal}`;
 function prepare(room){const key=`${room.id}:${room.table.deal}:${room.table.phase}`;if(key!==formKey){formKey=key;draft={transfers:{},target:0,announce:null};}}
@@ -14,7 +14,7 @@ export function incoming(room,me){
   return room.table.deliveries.filter(d=>d.to===me.id&&d.card&&room.table.hand.includes(d.card)&&saved[d.id]!==2).map(d=>({...d,stage:saved[d.id]??(d.public?1:0)}));
 }
 export function selectedTransfers(room){prepare(room);return Object.values(draft.transfers??{}).map(t=>t.card).filter(Boolean);}
-export function clearThousand(){clearTimeout(timer);$('thousand-table').hidden=true;}
+export function clearThousand(){cancelDrag();clearTimeout(timer);$('thousand-table').hidden=true;}
 export function inspectTrick(room,player){
   const pile=room.table?.piles?.find(p=>p.player===player);if(!pile?.top)return;
   const dialog=$('inspector'),content=$('inspector-content');content.replaceChildren();
@@ -23,13 +23,61 @@ export function inspectTrick(room,player){
   const cards=node('div','','inspect-cards');for(const play of pile.top.plays){const slot=node('div');slot.append(playingCard(play.card),node('span',room.players.find(p=>p.id===play.player)?.name??play.player));cards.append(slot);}content.append(cards);
   openPile={room:room.id,deal:room.table.deal};dialog.showModal();
 }
+function placeCard(room,code,recipient){
+  prepare(room);
+  const previous=Object.entries(draft.transfers).find(([,choice])=>choice.card===code);
+  const openly=previous?.[1].public??false;
+  if(previous)delete draft.transfers[previous[0]];
+  if(recipient)draft.transfers[recipient]={card:code,public:openly};
+  const next=room.table.controls.recipients.findIndex(p=>!draft.transfers[p.id]);
+  draft.target=next<0?0:next;
+}
+function cancelDrag(){
+  if(!drag)return;
+  drag.ghost?.remove();drag.source.classList.remove('is-dragging');
+  document.querySelectorAll('.drop-hover').forEach(e=>e.classList.remove('drop-hover'));
+  drag=null;
+}
+export function bindDistributionDrag({room,repaint}){
+  const recipients=room.table?.controls.recipients??[];if(!recipients.length)return;
+  for(const source of document.querySelectorAll('#hand .card,.seat-transfer')){
+    source.ondragstart=e=>e.preventDefault();
+    source.onpointerdown=e=>{
+      if(e.button!==0||e.isPrimary===false)return;
+      e.stopPropagation();cancelDrag();
+      drag={source,code:source.dataset.transferCard??source.dataset.card,x:e.clientX,y:e.clientY,id:e.pointerId};
+      source.setPointerCapture(e.pointerId);
+    };
+    source.onpointermove=e=>{
+      if(!drag||drag.source!==source||drag.id!==e.pointerId)return;
+      if(!drag.ghost&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;
+      e.preventDefault();
+      if(!drag.ghost){drag.ghost=node('div','','transfer-drag');drag.ghost.append(source.matches('.seat-transfer')?source.firstElementChild.cloneNode(true):playingCard(drag.code));document.body.append(drag.ghost);source.classList.add('is-dragging');}
+      drag.ghost.style.left=`${e.clientX}px`;drag.ghost.style.top=`${e.clientY}px`;
+      document.querySelectorAll('.drop-hover').forEach(el=>el.classList.remove('drop-hover'));
+      const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-recipient]');
+      if(target)target.classList.add('drop-hover');
+      else if(document.elementFromPoint(e.clientX,e.clientY)?.closest('#hand'))$('hand').classList.add('drop-hover');
+    };
+    source.onpointerup=e=>{
+      if(!drag||drag.source!==source||drag.id!==e.pointerId)return;
+      const moved=!!drag.ghost,code=drag.code,target=document.elementFromPoint(e.clientX,e.clientY),recipient=target?.closest('[data-recipient]')?.dataset.recipient;
+      cancelDrag();
+      if(!moved)return;
+      suppressClickUntil=performance.now()+350;setTimeout(()=>suppressClickUntil=0,0);e.preventDefault();
+      if(current.room.id!==room.id||current.room.table.phase!=='distribution')return;
+      if(recipients.some(p=>p.id===recipient))placeCard(room,code,recipient);
+      else if(target?.closest('#hand'))placeCard(room,code,null);
+      repaint();
+    };
+    source.onpointercancel=source.onlostpointercapture=()=>cancelDrag();
+  }
+}
 export function handCard(code,{room,me,send,run,repaint}){
+  if(performance.now()<suppressClickUntil)return;
   prepare(room);const t=room.table,c=t.controls;
   if(c.recipients.length){
-    const recipients=c.recipients;let target=recipients[draft.target??0]??recipients[0];
-    const existing=Object.entries(draft.transfers).find(([,v])=>v.card===code);
-    if(existing){delete draft.transfers[existing[0]];draft.target=recipients.findIndex(p=>p.id===existing[0]);}
-    else{draft.transfers[target.id]={card:code,public:draft.transfers[target.id]?.public??false};const next=recipients.findIndex(p=>!draft.transfers[p.id]?.card);if(next>=0)draft.target=next;}
+    placeCard(room,code,(c.recipients[draft.target??0]??c.recipients[0]).id);
     repaint();return;
   }
   if(c.legalCards.includes(code))run(()=>send({type:'play',card:code,announce:c.announceCards.includes(code)&&draft.announce===code.slice(-1)}));
@@ -52,7 +100,7 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
   }
   const phase=ending?'auction':t.phase;
   $('room').dataset.presentation=phase;
-  const status={awaitShuffle:`${name(t.dealer)} deals next.`,auction:ending?'Auction complete.':`${t.turn===me.id?'Your turn':name(t.turn)+"'s turn"} to bid.`,stock:`${name(t.contractor)} takes the stock.`,distribution:c.recipients.length?`Tap a card for ${name(c.recipients[draft.target??0]?.id??c.recipients[0].id)}.`:`${name(t.contractor)} is giving cards.`,preparation:`${name(t.contractor)} sets the contract.`,trick:t.turn===me.id?'Your turn - tap a card to play.':`${name(t.turn)} is playing.`,closing:'Trick complete.',finished:'The match is complete.'};
+  const status={awaitShuffle:`${name(t.dealer)} deals next.`,auction:ending?'Auction complete.':`${t.turn===me.id?'Your turn':name(t.turn)+"'s turn"} to bid.`,stock:`${name(t.contractor)} takes the stock.`,distribution:c.recipients.length?'Give one card to each hand.':`${name(t.contractor)} is giving cards.`,preparation:`${name(t.contractor)} sets the contract.`,trick:t.turn===me.id?'Your turn - tap a card to play.':`${name(t.turn)} is playing.`,closing:'Trick complete.',finished:'The match is complete.'};
   $('phase').textContent=status[phase];
   $('thousand-table').hidden=false;$('thousand-table').replaceChildren();
   const hud=node('div','','table-hud');hud.append(node('span',`Trump ${t.trump?symbols[t.trump]:'none'}`,'hud-pill'));
@@ -95,13 +143,17 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
   }
   if(t.phase==='auction'&&callUntil>now())for(const element of $('game-actions').querySelectorAll('button,input'))element.disabled=true;
   if(c.recipients.length){
-    const form=node('form','','distribution-form'),grid=node('div','','transfer-grid');
-    c.recipients.forEach((recipient,i)=>{
-      const choice=draft.transfers[recipient.id],tile=node('div', '',`transfer-row${(draft.target??0)===i?' active-target':''}`),pick=node('button','','transfer-target');pick.type='button';pick.setAttribute('aria-label',`Choose a card for ${recipient.name}`);pick.onclick=()=>{draft.target=i;repaint();};
-      pick.append(choice?.card?playingCard(choice.card):cardBack(),node('span',`To ${recipient.name}`));
-      const open=node('input');open.type='checkbox';open.checked=choice?.public??false;open.setAttribute('aria-label',`Give openly to ${recipient.name}`);open.onchange=()=>{draft.transfers[recipient.id]={...draft.transfers[recipient.id],public:open.checked};};const label=node('label','Openly');label.append(open);tile.append(pick,label);grid.append(tile);
-    });
-    const submit=node('button','Give two cards');submit.disabled=!c.recipients.every(p=>draft.transfers[p.id]?.card);form.append(grid,submit);form.onsubmit=e=>{e.preventDefault();run(()=>send({type:'distribute',transfers:c.recipients.map(p=>({player:p.id,...draft.transfers[p.id]}))}));};$('game-actions').append(form);
+    for(const [index,recipient]of c.recipients.entries()){
+      const seat=[...$('seats').children].find(e=>e.dataset.player===recipient.id),choice=draft.transfers[recipient.id];
+      if(!seat)continue;
+      seat.dataset.recipient=recipient.id;seat.classList.add('transfer-recipient');
+      const hand=seat.querySelector('.seat-hand');hand.disabled=false;hand.setAttribute('aria-label',`Give a card to ${recipient.name}`);hand.onclick=e=>{e.stopPropagation();draft.target=index;repaint();};
+      if(choice){
+        const card=node('button','','seat-transfer');card.type='button';card.dataset.transferCard=choice.card;card.dataset.visibility=choice.public?'open':'secret';card.setAttribute('aria-label',`Card for ${recipient.name} - ${choice.public?'open, turn face down':'secret, turn face up'}`);card.setAttribute('aria-pressed',String(choice.public));card.append(choice.public?playingCard(choice.card):cardBack());
+        card.onclick=e=>{e.stopPropagation();if(performance.now()<suppressClickUntil)return;choice.public=!choice.public;repaint();};seat.append(card);
+      }
+    }
+    const give=btn('Give two cards',{type:'distribute',transfers:c.recipients.map(p=>({player:p.id,...draft.transfers[p.id]}))});give.disabled=!c.recipients.every(p=>draft.transfers[p.id]?.card);$('table-actions').append(give);
   }
   const arrivals=incoming(room,me);$('incoming-zone').replaceChildren();
   for(const gift of arrivals){const button=node('button','','incoming-card');button.type='button';button.dataset.transfer=String(gift.id);button.setAttribute('aria-label',gift.stage?`Add ${cardName(gift.card)} to your hand`:'Reveal secret card');button.append(gift.stage?playingCard(gift.card):cardBack());button.onclick=()=>{const saved=read(deliveryKey(room,me));saved[gift.id]=gift.stage?2:1;localStorage.setItem(deliveryKey(room,me),JSON.stringify(saved));repaint();};$('incoming-zone').append(button);}
