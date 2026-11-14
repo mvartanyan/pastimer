@@ -6,7 +6,7 @@ Updated 2026-11-14. Repository: `mvartanyan/pastimer`. Local Horse continuation:
 
 The Rust multiplayer platform, the owner's complete Thousand rules, audit verifier and redesigned card-table UI are implemented. **Pastimer is deployed and verified on Horse at https://1000.vartanyan.com**, using the established local `/Users/michael/dev/k3s-horse` setup. [@pastimerbot](https://t.me/pastimerbot) has a verified default `Play / Играть` menu button pointing to that origin.
 
-The running application source is `60c380824d4b0b3f55d36a79db950c5eb905f637`. Transfers now drag to player hands and turn on tap; eligible marriages default on, and the current trump uses crossed gold rings plus its suit. Incoming cards now use a highlight without sender/tap labels, and reopening a deal no longer replays stale receipts or miscounts the hand. The current gameplay update includes paced auction calls, stronger computer seats, one-screen play, readable cards, hand-selected transfers and table recovery after reopening. The owner confirmed actual Telegram launch, identity and table creation. Live browser checks also completed solo/two-human computer games and verified their proofs with the deployed audit binary. Original sessions, completed room and exact audit survived both pod replacement and this upgrade. See [the current Horse release record](horse-transfers-marriages-2026-11-14.md) for image digests, backups and checks; [the initial record](horse-2026-11-14.md) retains the first deployment history.
+The running application source is `f54714d388be37749979e8fe206a323c73d7de9e`. The table now has one centred top-view trump symbol, large rings on announcing cards, owner-anchored played cards, a persistent leader cue and animated collection to the winning hand. Contract information appears only at its owner's seat. Transfers now drag to player hands and turn on tap; eligible marriages default on, and the current trump uses crossed gold rings plus its suit. Incoming cards now use a highlight without sender/tap labels, and reopening a deal no longer replays stale receipts or miscounts the hand. The current gameplay update includes paced auction calls, stronger computer seats, one-screen play, readable cards, hand-selected transfers and table recovery after reopening. The owner confirmed actual Telegram launch, identity and table creation. Live browser checks also completed solo/two-human computer games and verified their proofs with the deployed audit binary. Original sessions, completed room and exact audit survived both pod replacement and this upgrade. See [the current Horse release record](horse-table-cues-2026-11-14.md) for image digests, backups and checks; [the initial record](horse-2026-11-14.md) retains the first deployment history.
 
 Relevant implementation commits:
 
@@ -16,6 +16,7 @@ Relevant implementation commits:
 - `0516a91` — keep local card selection responsive during background refresh, with a regression check that holds the refresh response open.
 - `f3fe9a9` - keep submitted actions responsive during background refresh and reject stale room snapshots; local regression and live Horse validation passed.
 - `4a9119c` - stack mobile lobby cards and normalize native form control heights and spacing.
+- `f54714d` - equal circular rings, declaring-card overlay, owner positions, leader/winner cues and trick collection.
 - `76064a6` - mouse/touch distribution onto recipient hands, tap to turn, drag back to cancel and no lower panel.
 - `60c3808` - default eligible marriages on, optional opt-out and prominent rings/suit trump marker.
 - `8458703` - constrain long recipient names in landscape; wait for actionable controls in browser checks.
@@ -110,7 +111,7 @@ npm run test:browser
 
 The Rust suite has 30 tests covering complete deals/matches, the attainable 380-point maximum, barrel behavior, sticks, privacy, rollback, four nines, per-player trick piles, restart recovery, rule replay, proof tampering, command races, retry idempotency, Telegram signatures and legacy compatibility. Browser checks cover the demo, full three-player Thousand play with real three-second closure, four-player here bidding/mixed-visibility distribution/dismissal, audit verification, reload/retry, card rendering, sorting, clipboard copying, mobile overflow and card selection during an in-flight refresh.
 
-Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; the owner has since confirmed actual Telegram launch, identity and table creation. See [the current release record](horse-transfers-marriages-2026-11-14.md) for the computer follow-up and live browser checks.
+Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; the owner has since confirmed actual Telegram launch, identity and table creation. See [the current release record](horse-table-cues-2026-11-14.md) for the computer follow-up and live browser checks.
 
 To verify a downloaded audit independently:
 
@@ -145,6 +146,7 @@ Consistent backups with successful SQLite integrity checks are on Horse:
 - `/var/backups/pastimer/pastimer-20261114-pre-receipts.sqlite`
 - `/var/backups/pastimer/pastimer-20261114-pre-receipts-final.sqlite`
 - `/var/backups/pastimer/pastimer-20261114-pre-drag-marriage.sqlite`
+- `/var/backups/pastimer/pastimer-20261114-pre-table-cues.sqlite`
 
 The prior image and build archives are retained for rollback. The temporary native builder is stopped, with no build tasks left running. Colima's unused failed-build cache was pruned (2.335GB); containers and volumes remained at zero, guest fstrim ran, temporary VM DNS was restored and `dotint-build` returned to Stopped. The original Docker context remains `colima`.
 
@@ -160,7 +162,7 @@ All 33 Rust tests, formatting, strict Clippy and the complete browser suites pas
 
 That release image manifest digest was `sha256:6c7f197a66f61470cd765ce9d1947fec7798867914e45a26881076a4424c5f9d`; its runtime image/config ID was `sha256:5df88912a5b95046d075998f2f85a8e912b236637a6bc68eec5b673e7f43902f`. Pod `pastimer-844c4f7458-j74cr` was Ready with zero restarts on the same PVC. The new pre-upgrade backup passed SQLite integrity checking. Native build archives and previous images are retained, the temporary builder is stopped, and Colima was not started for this follow-up.
 
-Reopen the Mini App to load the new assets, then create a computer table to test alone. A manual real-client computer-game playthrough is distinct from the passing signed synthetic browser flows. A Main Mini App/profile launch button remains optional; the default menu button is configured. Scheduled/off-host backups are not established by this setup. See [the current release record](horse-transfers-marriages-2026-11-14.md).
+Reopen the Mini App to load the new assets, then create a computer table to test alone. A manual real-client computer-game playthrough is distinct from the passing signed synthetic browser flows. A Main Mini App/profile launch button remains optional; the default menu button is configured. Scheduled/off-host backups are not established by this setup. See [the current release record](horse-table-cues-2026-11-14.md).
 
 ## Gameplay follow-up
 
@@ -180,7 +182,7 @@ IDs recover the table after reopening, including fresh browser storage.
 All 41 Rust tests, strict Clippy and full browser suites pass. Three/four-human
 deals and solo/two-human computer games complete, audits verify, and normal
 controls/cards fit seven portrait/landscape sizes from 320x480 to 1024x768.
-Reviewed screenshots are updated. See the [current release record](horse-transfers-marriages-2026-11-14.md)
+Reviewed screenshots are updated. See the [current release record](horse-table-cues-2026-11-14.md)
 for live verification and deployment identity.
 
 ## Receipt/count follow-up
@@ -199,7 +201,7 @@ after four plays. A stale played gift explains the displayed five. Source
 before the recipient's first play. A failing-before/passing-after regression
 reopens a five-card hand with empty browser storage. The complete browser suite
 passes, including the new receipt UI/count checks at three and four seats.
-See [the current release record](horse-transfers-marriages-2026-11-14.md) for live proof.
+See [the current release record](horse-table-cues-2026-11-14.md) for live proof.
 
 The final image also constrains transfer buttons when recipient names are long,
 including narrow landscape. Browser checks now use long player names and wait
@@ -225,3 +227,23 @@ The complete browser suite, focused multiple-marriage UI fixtures and actual
 human games with default marriage leads pass. Mouse/touch/cancel/invalid-drop,
 drag-back, face toggling, no lower panel, privacy, retries, audits and seven
 viewport geometries are covered. See the current release record for live proof.
+
+## Table clarity and trick collection
+
+Remove the central contract/name and preparation contract text. Contract order
+is shown at the owner's seat, including barrel/next-dealer cases. Marriage rings
+are equal circles viewed from above with an over-under crossing. Large rings
+sit on the announcing court card; the persistent trump stays top-centred.
+
+Played cards remain by their owners (left/right/lower), independently of play
+order and including the sitting-out dealer view. The leader stays highlighted.
+A completed trick highlights the winning hand/card and flies into that hand in
+the final part of the same three-second closure interval. Reduced motion keeps
+static winner/status cues. Public `trickLeader`, `trickWinner`, `announcingCard`
+fields are derived from existing public state and restore after reopening.
+
+All 41 Rust tests, strict Clippy and the full browser suite pass. Focused geometry
+checks verify round equal rings, no card/seat/trump overlap across seven sizes,
+collection endpoints and reduced motion. The real four-player view is tested
+with the dealer sitting out. See the current release record for image identity,
+live verification and persistence proof.

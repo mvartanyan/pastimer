@@ -1,6 +1,7 @@
 # Horse transfer and marriage update
 
 Date: 2026-11-14. Origin: https://1000.vartanyan.com. Telegram: https://t.me/pastimerbot.
+Current release: [table cues and collection](horse-table-cues-2026-11-14.md).
 Previous release: [receipt/count fix](horse-receipts-2026-11-14.md).
 
 ## Behavior

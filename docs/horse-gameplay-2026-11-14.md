@@ -2,7 +2,7 @@
 
 Date: 2026-11-14. Origin: https://1000.vartanyan.com. Telegram: https://t.me/pastimerbot.
 
-This is a historical release record. See the [current receipt fix](horse-transfers-marriages-2026-11-14.md). Earlier releases remain documented in the
+This is a historical release record. See the [current receipt fix](horse-table-cues-2026-11-14.md). Earlier releases remain documented in the
 [initial deployment](horse-2026-11-14.md) and [computer-seat rollout](horse-computers-2026-11-14.md).
 
 ## Release identity

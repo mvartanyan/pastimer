@@ -1,7 +1,7 @@
 # Horse receipt and hand-count fix
 
 Date: 2026-11-14. Origin: https://1000.vartanyan.com. Telegram: https://t.me/pastimerbot.
-Current release: [transfers and marriage defaults](horse-transfers-marriages-2026-11-14.md).
+Current release: [transfers and marriage defaults](horse-table-cues-2026-11-14.md).
 Previous release: [gameplay update](horse-gameplay-2026-11-14.md).
 
 ## Change and diagnosis
