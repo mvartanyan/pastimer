@@ -19,4 +19,4 @@ cargo build --locked
 node scripts/capture-screenshots.mjs
 ```
 
-The helper writes to `artifacts/screenshots/`, which is ignored by Git. Review the resulting images and copy the selected PNGs into this directory to update the committed gallery. No real Telegram bot token is required.
+The incoming-card preview comes from the receipt step in `tests/thousand-browser.mjs`. The capture helper writes the other four previews to `artifacts/screenshots/`, which is ignored by Git. Review the resulting images and copy the selected PNGs into this directory to update the committed gallery. No real Telegram bot token is required.
