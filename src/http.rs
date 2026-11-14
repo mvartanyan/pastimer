@@ -221,10 +221,13 @@ async fn me(State(state): State<App>, headers: HeaderMap) -> Result<Json<Player>
     Ok(Json(player(&state, &headers).await?))
 }
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Create {
     game: GameId,
     #[serde(default)]
     options: Option<crate::thousand::Settings>,
+    #[serde(default)]
+    computer_count: u8,
 }
 async fn create(
     State(state): State<App>,
@@ -236,7 +239,7 @@ async fn create(
     Ok(Json(
         state
             .engine
-            .create_configured(p, body.game, body.options)
+            .create_with_computers(p, body.game, body.options, body.computer_count)
             .await?,
     ))
 }

@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 pub mod audit;
+pub mod computer;
 pub mod crypto;
 pub mod engine;
 pub mod error;

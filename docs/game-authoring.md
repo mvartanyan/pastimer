@@ -19,3 +19,13 @@ The core `Card` represents a validated standard rank/suit card. Thousand defines
 Thousand v2 audits reveal one settled deal at a time. Records bind the original deck, every movement, tricks, scores and cancellations to the event chain. Independent card-location validation complements full action replay. Keep the current deal private and preserve legacy v1 verifier behavior.
 
 Tests should cover complete matches, illegal/out-of-turn actions, score boundaries, hidden-information projections, concurrent retries, reconnection, cancellation and every shuffle/deadline boundary. Keep pure rules tests separate from persistence/API and browser tests.
+
+## Computer seats
+
+Room creation accepts a platform-level `computerCount` for Thousand, separate from its rules settings. The stored room has a default-empty `computers` roster of seat IDs, preserving old snapshots. Public views disclose those IDs and normal player projections, never the other hands. Computer identities cannot be obtained through the Telegram or local-development login paths.
+
+`src/computer.rs` is a deliberately simple policy over a single seat's typed public view. It passes, privately distributes two distinct cards, retains the current order, and chooses from legal cards, preferring a permitted marriage announcement. It never changes the rules or examines another hand.
+
+The engine dispatches human and computer actions through the same validator and sealed audit-proof code. Ready computer actions form a bounded burst within the existing SQLite transaction; human commands keep their durable retry receipts. Reads materialize persisted trick deadlines and resume any ready computers after restart. There is no separate AI service or timer state to lose. With no active client polling, play waits until the room is read again.
+
+Deal boundaries require human input even for a computer dealer. The `computerDeal` platform command records the requesting human and applies the actual shuffle as the computer dealer; normal rule replay verifies the shuffle. Audit replay also validates the request's human actor and computer dealer. This keeps settled scores and trick piles available until the next deal is requested.

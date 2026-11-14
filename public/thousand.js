@@ -5,7 +5,7 @@ const symbols={H:'♥',D:'♦',C:'♣',S:'♠'};
 let closureTimer,formKey='',draft={},openPiles=new Set(),previousPlays=new Set();
 function label(text,input){const e=node('label',text);e.append(input);return e;}
 export function clearThousand(){clearTimeout(closureTimer);$('thousand-table').hidden=true;$('trick-piles').hidden=true;}
-export function renderThousand({room,me,selected,send,refresh,run}){
+export function renderThousand({room,me,selected,send,refresh,sendPlatform,run}){
   clearTimeout(closureTimer);const t=room.table,c=t.controls;
   const name=id=>room.players.find(p=>p.id===id)?.name??id;
   const btn=(text,action,className)=>{const e=node('button',text,className);e.type='button';e.onclick=()=>run(()=>send(action));return e;};
@@ -44,6 +44,7 @@ export function renderThousand({room,me,selected,send,refresh,run}){
   }
   $('thousand-table').append(center);
   if(c.shuffle)$('table-actions').append(btn(t.deal?'Shuffle & deal next hand':'Shuffle & deal',{type:'shuffle'}));
+  else if(t.phase==='awaitShuffle'&&room.computers?.includes(t.dealer)){const deal=node('button',t.deal?'Ask computer to deal next hand':'Ask computer to deal');deal.type='button';deal.onclick=()=>run(()=>sendPlatform({type:'computerDeal'}));$('table-actions').append(deal);}
   if(c.fourNines)$('table-actions').append(btn('Declare four nines',{type:'fourNines'},'secondary'));
   if(c.dismiss)$('table-actions').append(btn('Take a stick · палочка',{type:'dismiss'},'secondary'));
   if(c.pass)$('game-actions').append(btn('Pass',{type:'pass'},'secondary'));

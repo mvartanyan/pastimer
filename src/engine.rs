@@ -152,6 +152,15 @@ impl Engine {
         game: GameId,
         options: Option<crate::thousand::Settings>,
     ) -> Result<Value> {
+        self.create_with_computers(player, game, options, 0).await
+    }
+    pub async fn create_with_computers(
+        &self,
+        player: Player,
+        game: GameId,
+        options: Option<crate::thousand::Settings>,
+        computer_count: u8,
+    ) -> Result<Value> {
         let options = match game {
             GameId::Thousand => {
                 let options = options.unwrap_or_default();
@@ -166,6 +175,16 @@ impl Engine {
                 None
             }
         };
+        ensure(
+            computer_count == 0
+                || (game == GameId::Thousand
+                    && options
+                        .as_ref()
+                        .is_some_and(|o| computer_count < o.player_count)),
+            Error::bad(
+                "Choose fewer computers than table seats; computers are available for Thousand",
+            ),
+        )?;
         let mut tx = self.store.pool.begin_with("BEGIN IMMEDIATE").await?;
         let alphabet = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         let code = loop {
@@ -177,6 +196,7 @@ impl Engine {
             }
         };
         let mut room = Room {
+            computers: vec![],
             options,
             id: Uuid::new_v4().to_string(),
             code,
@@ -193,6 +213,21 @@ impl Engine {
         };
         let creation = json!({"game":game,"gameVersion":1,"player":player,"options":room.options});
         Self::event(&mut room, &player.id, "room.created", creation)?;
+        for seat in 1..=computer_count {
+            let computer = Player {
+                id: format!("computer:{}:{seat}", room.id),
+                name: format!("Computer {seat}"),
+            };
+            room.computers.push(computer.id.clone());
+            room.players.push(computer.clone());
+            room.version += 1;
+            Self::event(
+                &mut room,
+                &player.id,
+                "player.joined",
+                json!({"player":computer,"computer":true}),
+            )?;
+        }
         Store::save(&mut tx, &room).await?;
         let view = Self::view(&room, &player.id)?;
         tx.commit().await?;
@@ -237,6 +272,185 @@ impl Engine {
         tx.commit().await?;
         Ok(view)
     }
+    fn apply_action(
+        room: &mut Room,
+        actor: &str,
+        action: &Action,
+        version: u64,
+        now: i64,
+    ) -> Result<()> {
+        match action {
+            Action::Start => {
+                ensure(
+                    room.host == actor,
+                    Error::new(StatusCode::FORBIDDEN, "Only the host can start"),
+                )?;
+                ensure(
+                    matches!(room.lifecycle, Lifecycle::Lobby) && room.players.len() >= 2,
+                    Error::conflict("Not ready to start"),
+                )?;
+                Self::event(room, actor, "game.started", json!({}))?;
+                match room.game {
+                    GameId::HighCard => {
+                        let result = HighCard::initialize(&room.players);
+                        Self::outcome(room, result, actor)?;
+                    }
+                    GameId::Thousand => {
+                        let options = room.options.clone().ok_or_else(Error::internal)?;
+                        let dealer = OsRng.gen_range(0..room.players.len());
+                        let state = crate::thousand::State::new(&room.players, options, dealer)?;
+                        let dealer_id = room.players[dealer].id.clone();
+                        Self::event(room, actor, "dealer.selected", json!({"player":dealer_id}))?;
+                        Self::thousand_outcome(
+                            room,
+                            Outcome::Continue {
+                                state,
+                                events: vec![],
+                            },
+                            actor,
+                        )?;
+                    }
+                }
+            }
+            Action::ComputerDeal => {
+                ensure(
+                    !room.computers.iter().any(|id| id == actor),
+                    Error::new(StatusCode::FORBIDDEN, "A human must request the next deal"),
+                )?;
+                let Some(GameState::Thousand(state)) = room.lifecycle.state() else {
+                    return Err(Error::conflict("No computer dealer is waiting"));
+                };
+                let dealer = room
+                    .players
+                    .get(state.dealer)
+                    .ok_or_else(Error::internal)?
+                    .id
+                    .clone();
+                ensure(
+                    matches!(state.phase, crate::thousand::Phase::AwaitShuffle)
+                        && room.computers.contains(&dealer),
+                    Error::conflict("No computer dealer is waiting"),
+                )?;
+                Self::event(
+                    room,
+                    actor,
+                    "computer.deal.requested",
+                    json!({"player":dealer}),
+                )?;
+                Self::apply_action(
+                    room,
+                    &dealer,
+                    &Action::Thousand {
+                        action: crate::thousand::Action::Shuffle,
+                    },
+                    version,
+                    now,
+                )?;
+            }
+            Action::Acknowledge {
+                shuffle_id,
+                commitment,
+            } => {
+                let Lifecycle::Committing(GameState::HighCard(state)) = &room.lifecycle else {
+                    return Err(Error::conflict("No shuffle to acknowledge"));
+                };
+                let state = state.clone();
+                let deck = room.decks.last_mut().ok_or_else(Error::internal)?;
+                ensure(
+                    deck.proof.shuffle_id == *shuffle_id && deck.commitment == *commitment,
+                    Error::conflict("Wrong deck commitment"),
+                )?;
+                ensure(
+                    !deck.acknowledgements.iter().any(|id| id == actor),
+                    Error::conflict("Already acknowledged"),
+                )?;
+                deck.acknowledgements.push(actor.into());
+                let ready = deck.acknowledgements.len() == room.players.len();
+                let cards = if ready {
+                    Some(deck.proof.cards.clone())
+                } else {
+                    None
+                };
+                Self::event(
+                    room,
+                    actor,
+                    "deck.acknowledged",
+                    json!({"shuffleId":shuffle_id,"commitment":commitment}),
+                )?;
+                if let Some(cards) = cards {
+                    let result = HighCard::on_deck(state, cards, &room.players)?;
+                    Self::event(
+                        room,
+                        actor,
+                        "deck.released-to-game",
+                        json!({"shuffleId":shuffle_id}),
+                    )?;
+                    Self::outcome(room, result, actor)?;
+                }
+            }
+            Action::Thousand { action } => {
+                let Lifecycle::Playing(GameState::Thousand(state)) = &room.lifecycle else {
+                    return Err(Error::conflict("Thousand is not accepting moves"));
+                };
+                let deal =
+                    state.deal + u32::from(matches!(action, crate::thousand::Action::Shuffle));
+                let result = (**state)
+                    .clone()
+                    .apply(actor, action.clone(), &room.players, now)?;
+                let proof = MoveProof {
+                    deal_id: Some(deal),
+                    actor: actor.into(),
+                    version,
+                    action: Action::Thousand {
+                        action: action.clone(),
+                    },
+                    salt: token(),
+                };
+                Self::event(
+                    room,
+                    actor,
+                    "move.committed",
+                    json!({"deal":deal,"commitment":hash(&proof)?}),
+                )?;
+                room.commands.push(proof);
+                Self::thousand_outcome(room, result, actor)?;
+            }
+
+            Action::Play { card } => {
+                let Lifecycle::Playing(GameState::HighCard(state)) = &room.lifecycle else {
+                    return Err(Error::conflict("Game is not accepting moves"));
+                };
+                let result = HighCard::apply(state.clone(), actor, card.clone(), &room.players)?;
+                let proof = MoveProof {
+                    deal_id: None,
+                    actor: actor.into(),
+                    version,
+                    action: action.clone(),
+                    salt: token(),
+                };
+                Self::event(
+                    room,
+                    actor,
+                    "move.committed",
+                    json!({"commitment":hash(&proof)?}),
+                )?;
+                room.commands.push(proof);
+                Self::outcome(room, result, actor)?;
+            }
+        }
+        Ok(())
+    }
+    fn advance_computers(room: &mut Room, now: i64) -> Result<()> {
+        for _ in 0..32 {
+            let Some((actor, action)) = crate::computer::next(room, now) else {
+                return Ok(());
+            };
+            let version = room.version;
+            Self::apply_action(room, &actor, &action, version, now)?;
+            room.version += 1;
+        }
+        Err(Error::internal())
+    }
     pub async fn command(&self, code: &str, actor: &str, command: Command) -> Result<Value> {
         self.advance_at(code, actor, Utc::now().timestamp_millis())
             .await?;
@@ -278,137 +492,10 @@ impl Engine {
             !matches!(room.lifecycle, Lifecycle::Finished(_)),
             Error::conflict("Game finished"),
         )?;
-        match &command.action {
-            Action::Start => {
-                ensure(
-                    room.host == actor,
-                    Error::new(StatusCode::FORBIDDEN, "Only the host can start"),
-                )?;
-                ensure(
-                    matches!(room.lifecycle, Lifecycle::Lobby) && room.players.len() >= 2,
-                    Error::conflict("Not ready to start"),
-                )?;
-                Self::event(&mut room, actor, "game.started", json!({}))?;
-                match room.game {
-                    GameId::HighCard => {
-                        let result = HighCard::initialize(&room.players);
-                        Self::outcome(&mut room, result, actor)?;
-                    }
-                    GameId::Thousand => {
-                        let options = room.options.clone().ok_or_else(Error::internal)?;
-                        let dealer = OsRng.gen_range(0..room.players.len());
-                        let state = crate::thousand::State::new(&room.players, options, dealer)?;
-                        let dealer_id = room.players[dealer].id.clone();
-                        Self::event(
-                            &mut room,
-                            actor,
-                            "dealer.selected",
-                            json!({"player":dealer_id}),
-                        )?;
-                        Self::thousand_outcome(
-                            &mut room,
-                            Outcome::Continue {
-                                state,
-                                events: vec![],
-                            },
-                            actor,
-                        )?;
-                    }
-                }
-            }
-            Action::Acknowledge {
-                shuffle_id,
-                commitment,
-            } => {
-                let Lifecycle::Committing(GameState::HighCard(state)) = &room.lifecycle else {
-                    return Err(Error::conflict("No shuffle to acknowledge"));
-                };
-                let state = state.clone();
-                let deck = room.decks.last_mut().ok_or_else(Error::internal)?;
-                ensure(
-                    deck.proof.shuffle_id == *shuffle_id && deck.commitment == *commitment,
-                    Error::conflict("Wrong deck commitment"),
-                )?;
-                ensure(
-                    !deck.acknowledgements.iter().any(|id| id == actor),
-                    Error::conflict("Already acknowledged"),
-                )?;
-                deck.acknowledgements.push(actor.into());
-                let ready = deck.acknowledgements.len() == room.players.len();
-                let cards = if ready {
-                    Some(deck.proof.cards.clone())
-                } else {
-                    None
-                };
-                Self::event(
-                    &mut room,
-                    actor,
-                    "deck.acknowledged",
-                    json!({"shuffleId":shuffle_id,"commitment":commitment}),
-                )?;
-                if let Some(cards) = cards {
-                    let result = HighCard::on_deck(state, cards, &room.players)?;
-                    Self::event(
-                        &mut room,
-                        actor,
-                        "deck.released-to-game",
-                        json!({"shuffleId":shuffle_id}),
-                    )?;
-                    Self::outcome(&mut room, result, actor)?;
-                }
-            }
-            Action::Thousand { action } => {
-                let Lifecycle::Playing(GameState::Thousand(state)) = &room.lifecycle else {
-                    return Err(Error::conflict("Thousand is not accepting moves"));
-                };
-                let deal =
-                    state.deal + u32::from(matches!(action, crate::thousand::Action::Shuffle));
-                let result = (**state).clone().apply(
-                    actor,
-                    action.clone(),
-                    &room.players,
-                    Utc::now().timestamp_millis(),
-                )?;
-                let proof = MoveProof {
-                    deal_id: Some(deal),
-                    actor: actor.into(),
-                    version: command.version,
-                    action: command.action.clone(),
-                    salt: token(),
-                };
-                Self::event(
-                    &mut room,
-                    actor,
-                    "move.committed",
-                    json!({"deal":deal,"commitment":hash(&proof)?}),
-                )?;
-                room.commands.push(proof);
-                Self::thousand_outcome(&mut room, result, actor)?;
-            }
-
-            Action::Play { card } => {
-                let Lifecycle::Playing(GameState::HighCard(state)) = &room.lifecycle else {
-                    return Err(Error::conflict("Game is not accepting moves"));
-                };
-                let result = HighCard::apply(state.clone(), actor, card.clone(), &room.players)?;
-                let proof = MoveProof {
-                    deal_id: None,
-                    actor: actor.into(),
-                    version: command.version,
-                    action: command.action.clone(),
-                    salt: token(),
-                };
-                Self::event(
-                    &mut room,
-                    actor,
-                    "move.committed",
-                    json!({"commitment":hash(&proof)?}),
-                )?;
-                room.commands.push(proof);
-                Self::outcome(&mut room, result, actor)?;
-            }
-        }
+        let now = Utc::now().timestamp_millis();
+        Self::apply_action(&mut room, actor, &command.action, command.version, now)?;
         room.version += 1;
+        Self::advance_computers(&mut room, now)?;
         Store::save(&mut tx, &room).await?;
         sqlx::query("INSERT INTO commands VALUES(?,?,?,?)")
             .bind(&room.id)
@@ -485,6 +572,7 @@ impl Engine {
             acknowledgements: d.acknowledgements.clone(),
         });
         Ok(serde_json::to_value(RoomView {
+            computers: room.computers.clone(),
             options: room.options.clone(),
             id: room.id.clone(),
             code: room.code.clone(),
@@ -505,19 +593,27 @@ impl Engine {
         let mut conn = self.store.pool.acquire().await?;
         let room = Self::load(&mut conn, code).await?;
         Self::member(&room, actor)?;
-        let due = matches!(room.lifecycle.state(),Some(GameState::Thousand(s))if s.due(now));
+        Self::compatible(&room)?;
+        let due = matches!(room.lifecycle.state(),Some(GameState::Thousand(s))if s.due(now))
+            || crate::computer::next(&room, now).is_some();
         drop(conn);
         if !due {
             return Ok(());
         }
         let mut tx = self.store.pool.begin_with("BEGIN IMMEDIATE").await?;
         let mut room = Self::load(&mut tx, code).await?;
+        Self::member(&room, actor)?;
+        Self::compatible(&room)?;
+        let before = room.version;
         if let Some(GameState::Thousand(state)) = room.lifecycle.state()
             && state.due(now)
         {
             let result = (**state).clone().close(&room.players, now)?;
             Self::thousand_outcome(&mut room, result, "system")?;
             room.version += 1;
+        }
+        Self::advance_computers(&mut room, now)?;
+        if room.version != before {
             Store::save(&mut tx, &room).await?;
         }
         tx.commit().await?;

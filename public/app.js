@@ -78,7 +78,7 @@ function render(next) {
   if(room.phase==='playing')for(const action of room.table?.actions??[]){const e=button(action.label,()=>command({type:action.type,...(action.input==='card'?{card:selected}:{})}));e.disabled=action.input==='card'&&!selected;$('game-actions').append(e);}
   $('commitment').textContent=room.deck?`Shuffle ${room.deck.shuffleId}\nSHA-256 ${room.deck.commitment}`:'The deck hash will appear before dealing.';
   if(room.table?.kind==='thousand'){
-    renderThousand({room,me,selected,send:action=>command({type:'thousand',action}),refresh:refreshRoom,run});
+    renderThousand({room,me,selected,send:action=>command({type:'thousand',action}),refresh:refreshRoom,sendPlatform:action=>command(action),run});
     if(room.table.phase==='trick')for(const card of $('hand').children){card.disabled=!room.table.controls.legalCards.includes(card.dataset.card);card.classList.toggle('is-unplayable',room.table.turn===me.id&&card.disabled);}
     $('commitment').textContent=room.deck?`Deal ${room.table.deal} · SHA-256 ${room.deck.commitment}`:'The dealer will publish the deck hash before dealing.';
   }else{
@@ -95,8 +95,17 @@ function saveReceipt() {
   $('receipt').textContent=`${receipts.length} receipts saved in this browser.`;
 }
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>signedIn(await api('/auth',{name:new FormData(e.target).get('name')})));};
-$('create-form').onsubmit=e=>{e.preventDefault();run(async()=>{const data=new FormData(e.target),game=data.get('game');render(await api('/rooms',{game,...(game==='thousand'?{options:{playerCount:Number(data.get('playerCount')),barrelThreshold:Number(data.get('barrelThreshold'))}}:{})}));});};
-$('games').onchange=()=>{$('thousand-settings').hidden=$('games').value!=='thousand';};
+$('create-form').onsubmit=e=>{e.preventDefault();run(async()=>{const data=new FormData(e.target),game=data.get('game');render(await api('/rooms',{game,...(game==='thousand'?{options:{playerCount:Number(data.get('playerCount')),barrelThreshold:Number(data.get('barrelThreshold'))},computerCount:Number(data.get('computerCount'))}:{})}));});};
+function configureComputers(){
+  const seats=Number(document.querySelector('[name=playerCount]').value),select=$('computer-count');
+  const count=Math.min(Number(select.value)||0,seats-1);
+  select.replaceChildren(...Array.from({length:seats},(_,i)=>{const option=element('option',i?`${i} computer${i===1?'':'s'} - ${seats-i===1?'solo':`${seats-i} people`}`:'No computers');option.value=String(i);return option;}));
+  select.value=String(count);const humans=seats-count;
+  $('computer-note').textContent=humans===1?'Just you and the computers. Start whenever you are ready.':`Invite ${humans-1} friend${humans===2?'':'s'} to fill the table${count?' - computers take the remaining seats':''}.`;
+}
+document.querySelector('[name=playerCount]').onchange=configureComputers;
+$('computer-count').onchange=configureComputers;
+$('games').onchange=()=>{$('thousand-settings').hidden=$('games').value!=='thousand';configureComputers();};
 $('join-form').onsubmit=e=>{e.preventDefault();run(async()=>render(await api(`/rooms/${String(new FormData(e.target).get('code')).trim().toUpperCase()}/join`,{})));};
 $('back').onclick=lobby;
 $('sort-hand').onclick=()=>{sortMode=sortMode==='suit'?'rank':'suit';localStorage.setItem('pastimer-hand-sort',sortMode);if(room)render(room);};

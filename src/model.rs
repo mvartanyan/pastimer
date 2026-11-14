@@ -92,6 +92,7 @@ pub enum Action {
         action: crate::thousand::Action,
     },
     Start,
+    ComputerDeal,
     Acknowledge {
         #[serde(rename = "shuffleId")]
         shuffle_id: u32,
@@ -200,6 +201,8 @@ pub struct Event {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Room {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub computers: Vec<String>,
     #[serde(default)]
     pub options: Option<crate::thousand::Settings>,
     pub id: String,
@@ -221,6 +224,7 @@ pub struct Room {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomView {
+    pub computers: Vec<String>,
     pub options: Option<crate::thousand::Settings>,
     pub id: String,
     pub code: String,

@@ -16,3 +16,6 @@
 .lobby-card>form>button{min-height:46px;margin-top:2px;font-size:14px}
 .join-card .small-note{margin:18px 0 0}
 @media(max-width:649px){#lobby{grid-template-columns:minmax(0,1fr)}.lobby-card{padding:22px}}
+
+.computer-settings{grid-column:1/-1}
+#computer-note{margin:0;line-height:1.5;color:var(--muted)}

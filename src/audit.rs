@@ -290,8 +290,13 @@ fn replay_thousand(
     let mut joined = vec![serde_json::from_value::<Player>(
         events[0]["data"]["player"].clone(),
     )?];
+    let mut computers = BTreeSet::new();
     for event in events.iter().filter(|e| e["type"] == "player.joined") {
-        joined.push(serde_json::from_value(event["data"]["player"].clone())?);
+        let player: Player = serde_json::from_value(event["data"]["player"].clone())?;
+        if event["data"]["computer"] == true {
+            computers.insert(player.id.clone());
+        }
+        joined.push(player);
     }
     check(
         players == joined
@@ -309,6 +314,7 @@ fn replay_thousand(
         return Ok(());
     }
     let mut pending_deck = false;
+    let mut requested_computer = None;
     let mut command_index = 0;
     let mut settled = 0;
     let mut expected: VecDeque<(String, PublicEvent)> = VecDeque::new();
@@ -332,6 +338,23 @@ fn replay_thousand(
                 check(command_index == 0, "Unexpected setup event")?;
                 continue;
             }
+            Some("computer.deal.requested") => {
+                let dealer = &players[state.dealer].id;
+                check(
+                    expected.is_empty()
+                        && !pending_deck
+                        && requested_computer.is_none()
+                        && matches!(state.phase, crate::thousand::Phase::AwaitShuffle)
+                        && computers.contains(dealer)
+                        && event["data"]["player"] == *dealer
+                        && event["actor"].as_str().is_some_and(|id| {
+                            players.iter().any(|p| p.id == id) && !computers.contains(id)
+                        }),
+                    "Invalid request for a computer dealer",
+                )?;
+                requested_computer = Some(dealer.clone());
+                continue;
+            }
             Some("move.committed") => {
                 check(expected.is_empty(), "Missing public rule events")?;
                 let command = commands
@@ -341,6 +364,15 @@ fn replay_thousand(
                 let Action::Thousand { action } = &command.action else {
                     return Err(Error::bad("Wrong game command"));
                 };
+                let requested = requested_computer.take();
+                check(
+                    if computers.contains(&command.actor) && matches!(action, Move::Shuffle) {
+                        requested.as_ref() == Some(&command.actor)
+                    } else {
+                        requested.is_none()
+                    },
+                    "Computer shuffle must follow a human request",
+                )?;
                 check(
                     !pending_deck
                         && command.deal_id
