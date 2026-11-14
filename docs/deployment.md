@@ -1,12 +1,12 @@
 # Deploying Pastimer on Horse / k3s
 
-Status on 2026-11-14: deployed on Horse at https://1000.vartanyan.com, with [@pastimerbot](https://t.me/pastimerbot) connected through its default `Play / Играть` menu button. The [Horse deployment record](horse-receipts-2026-11-14.md) contains the actual source revision, immutable image/digests, checks and backup paths. The canonical overlay is `deploy/horse/`; the rendered copy and operating notes are in the local `/Users/michael/dev/k3s-horse/pastimer` project. The owner confirmed real Telegram launch, signed-in identity and table creation. The current layout/computer release passes live solo and two-human browser games with signed synthetic identities; these are distinct from a manual real-client multiplayer playthrough.
+Status on 2026-11-14: deployed on Horse at https://1000.vartanyan.com, with [@pastimerbot](https://t.me/pastimerbot) connected through its default `Play / Играть` menu button. The [Horse deployment record](horse-transfers-marriages-2026-11-14.md) contains the actual source revision, immutable image/digests, checks and backup paths. The canonical overlay is `deploy/horse/`; the rendered copy and operating notes are in the local `/Users/michael/dev/k3s-horse/pastimer` project. The owner confirmed real Telegram launch, signed-in identity and table creation. The current layout/computer release passes live solo and two-human browser games with signed synthetic identities; these are distinct from a manual real-client multiplayer playthrough.
 
 The application runs as one replica with a persistent SQLite volume. The deployment uses Recreate updates so old and new pods do not write the database concurrently. The manifests create only the `pastimer` namespace and its application resources. Keep the cluster's existing ingress, certificate issuer and storage configuration.
 
 ## Actual Horse overlay
 
-For this installation use `kubectl kustomize deploy/horse` and the scoped SSH commands in [the deployment record](horse-receipts-2026-11-14.md). The base `deploy/k3s` directory remains hostname-neutral; the example ingress is still an example. Future releases must use a new tested immutable image and preserve the existing PVC. The generic instructions below also apply to a fresh installation.
+For this installation use `kubectl kustomize deploy/horse` and the scoped SSH commands in [the deployment record](horse-transfers-marriages-2026-11-14.md). The base `deploy/k3s` directory remains hostname-neutral; the example ingress is still an example. Future releases must use a new tested immutable image and preserve the existing PVC. The generic instructions below also apply to a fresh installation.
 
 ## Container image
 
