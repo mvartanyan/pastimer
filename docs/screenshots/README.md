@@ -10,6 +10,7 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | Choosing cards to give, with independent visibility | [02-distribution.png](02-distribution.png) |
 | A completed trick before its three-second collection | [03-playing-a-trick.png](03-playing-a-trick.png) |
 | Last captured trick opened from a player seat | [04-collected-tricks.png](04-collected-tricks.png) |
+| Highlighted secret receipt with no instructional text | [05-incoming-card.png](05-incoming-card.png) |
 
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 
@@ -18,4 +19,4 @@ cargo build --locked
 node scripts/capture-screenshots.mjs
 ```
 
-The helper writes to `artifacts/screenshots/`, which is ignored by Git. Review the resulting images and copy the four selected PNGs into this directory to update the committed gallery. No real Telegram bot token is required.
+The helper writes to `artifacts/screenshots/`, which is ignored by Git. Review the resulting images and copy the selected PNGs into this directory to update the committed gallery. No real Telegram bot token is required.

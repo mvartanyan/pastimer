@@ -7,9 +7,11 @@ const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'{}');}catch{r
 const deliveryKey=(room,me)=>`pastimer-deliveries:${me.id}:${room.id}:${room.table.deal}`;
 function prepare(room){const key=`${room.id}:${room.table.deal}:${room.table.phase}`;if(key!==formKey){formKey=key;draft={transfers:{},target:0,announce:null};}}
 export function incoming(room,me){
-  if(!room.table?.deliveries)return [];
+  // Receipt acknowledgment precedes the recipient's first play. Reopening a
+  // later trick must not resurrect historical transfers or already played cards.
+  if(!room.table?.deliveries||room.table.hand.length!==8||['awaitShuffle','finished'].includes(room.table.phase))return [];
   const saved=read(deliveryKey(room,me));
-  return room.table.deliveries.filter(d=>d.to===me.id&&d.card&&saved[d.id]!==2).map(d=>({...d,stage:saved[d.id]??(d.public?1:0)}));
+  return room.table.deliveries.filter(d=>d.to===me.id&&d.card&&room.table.hand.includes(d.card)&&saved[d.id]!==2).map(d=>({...d,stage:saved[d.id]??(d.public?1:0)}));
 }
 export function selectedTransfers(room){prepare(room);return Object.values(draft.transfers??{}).map(t=>t.card).filter(Boolean);}
 export function clearThousand(){clearTimeout(timer);$('thousand-table').hidden=true;}
@@ -102,8 +104,8 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
     const submit=node('button','Give two cards');submit.disabled=!c.recipients.every(p=>draft.transfers[p.id]?.card);form.append(grid,submit);form.onsubmit=e=>{e.preventDefault();run(()=>send({type:'distribute',transfers:c.recipients.map(p=>({player:p.id,...draft.transfers[p.id]}))}));};$('game-actions').append(form);
   }
   const arrivals=incoming(room,me);$('incoming-zone').replaceChildren();
-  for(const gift of arrivals){const button=node('button','','incoming-card');button.type='button';button.dataset.transfer=String(gift.id);button.setAttribute('aria-label',gift.stage?`Add ${cardName(gift.card)} to your hand`:`Reveal secret card from ${name(gift.from)}`);button.append(gift.stage?playingCard(gift.card):cardBack(),node('span',`${gift.public?'Open':'Secret'} from ${name(gift.from)}`),node('small',gift.stage?'Tap to add to hand':'Tap to reveal'));button.onclick=()=>{const saved=read(deliveryKey(room,me));saved[gift.id]=gift.stage?2:1;localStorage.setItem(deliveryKey(room,me),JSON.stringify(saved));repaint();};$('incoming-zone').append(button);}
-  if(arrivals.length)$('phase').textContent='You received a card - tap it to receive it.';
+  for(const gift of arrivals){const button=node('button','','incoming-card');button.type='button';button.dataset.transfer=String(gift.id);button.setAttribute('aria-label',gift.stage?`Add ${cardName(gift.card)} to your hand`:'Reveal secret card');button.append(gift.stage?playingCard(gift.card):cardBack());button.onclick=()=>{const saved=read(deliveryKey(room,me));saved[gift.id]=gift.stage?2:1;localStorage.setItem(deliveryKey(room,me),JSON.stringify(saved));repaint();};$('incoming-zone').append(button);}
+  if(arrivals.length){$('phase').textContent='Your card.';for(const control of $('game-actions').querySelectorAll('button,input'))control.disabled=true;}
   if(c.announceCards.length&&!arrivals.length){const suits=[...new Set(c.announceCards.map(card=>card.slice(-1)))];for(const suit of suits){const toggle=node('button',`Announce ${symbols[suit]} +${{H:100,D:80,C:60,S:40}[suit]}`,'secondary marriage-toggle');toggle.setAttribute('aria-pressed',String(draft.announce===suit));toggle.onclick=()=>{draft.announce=draft.announce===suit?null:suit;repaint();};$('game-actions').append(toggle);}}
   $('audit').disabled=t.auditDeals===0;$('audit').textContent=t.auditDeals?'Download audit':'No completed deal yet';
 }

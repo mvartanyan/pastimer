@@ -31,6 +31,7 @@ try{
     const read=async page=>await page.evaluate(async code=>await(await fetch(`/api/rooms/${code}`)).json(),code);
     const act=async(page,locator)=>{await locator.waitFor();const version=Number(await page.locator('#room').getAttribute('data-version'));await locator.click(await locator.evaluate(e=>e.classList.contains('card'))?{position:{x:8,y:18}}:{});await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>v,version);};
     await act(host,host.getByRole('button',{name:'Start game',exact:true}));let room=await read(host);const dealer=byId.get(room.table.dealer);await act(dealer,dealer.getByRole('button',{name:'Shuffle & deal',exact:true}));room=await read(host);assert.equal(room.deck.acknowledgements.length,0);
+    for(const page of pages){const initial=await read(page);if(initial.table.hand.length){assert.equal(initial.table.hand.length,7,'Deal seven cards to every active seat');await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>=v,initial.version);assert.equal(await page.locator('#hand-count').textContent(),'7 cards');assert.equal(await page.locator('#hand .card').count(),7);}}
     const layouts=async page=>{const previous=page.viewportSize();for(const viewport of [{width:320,height:480},{width:320,height:568},{width:390,height:650},{width:430,height:932},{width:568,height:320},{width:844,height:390},{width:1024,height:768}]){await page.setViewportSize(viewport);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));await fits(page);}await page.setViewportSize(previous);};
     await layouts(host);
     await host.setViewportSize({width:390,height:650});let steps=0;
@@ -51,7 +52,9 @@ try{
       await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>=v,own.version);
       for(const delivery of own.table.deliveries)if(!delivery.public&&delivery.from!==myId&&delivery.to!==myId)assert.equal(delivery.card,null,'Private transfers stay hidden from the third player');
       while(await page.locator('.incoming-card').count()){
+        assert.equal(own.table.hand.length,8,'A stock recipient holds eight cards before playing');assert.equal(await page.locator('#hand-count').textContent(),'8 cards');
         const gift=page.locator('.incoming-card').first(),label=await gift.getAttribute('aria-label'),before=await page.locator('#hand .card').count();
+        assert.doesNotMatch(await gift.textContent(),/from |tap to/i,'Receipt is highlighted without instructional text');assert.equal(await page.locator('#sort-hand').isVisible(),false);assert.equal(await page.locator('#game-actions button:not(:disabled),#hand .card:not(:disabled)').count(),0,'The incoming card is the only enabled gameplay action');await layouts(page);
         if(label.startsWith('Reveal')){await page.screenshot({path:'/tmp/pastimer-secret-card.png'});secretReceipts++;assert.equal(await gift.locator('[data-card]').count(),0);await gift.click();assert.equal(await page.locator('#hand .card').count(),before);await page.locator('.incoming-card').first().click();}
         else{publicReceipts++;assert.equal(await gift.locator('[data-card]').count(),1);await gift.click();}
         assert.equal(await page.locator('#hand .card').count(),before+1);
@@ -68,6 +71,11 @@ try{
         if(i===0){await page.getByRole('button',{name:'Retry previous move'}).waitFor();await page.reload();await page.getByRole('button',{name:'Retry previous move'}).click();await page.getByRole('button',{name:'Retry previous move'}).waitFor({state:'hidden'});}
         if(i===2){await layouts(page);await page.screenshot({path:'/tmp/pastimer-trick.png'});}else await fits(page);assert.equal(await page.locator('.stock-display').count(),0);
         if(i%3===2){const closing=await read(page);assert.equal(closing.table.phase,'closing');await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>v,closing.version,{timeout:6500});}
+        if(i===8){
+          const recipient=pages.find(p=>p!==owner&&room.table.seats.find(s=>byId.get(s.id)===p)?.count!==0),state=await recipient.context().storageState();
+          const fresh=await browser.newContext({viewport:{width:390,height:650},storageState:{cookies:state.cookies,origins:[]}});await fresh.route('https://telegram.org/**',r=>r.abort());const reopened=await fresh.newPage();await reopened.goto(base);await reopened.locator('#room-code').waitFor();
+          const resumed=await read(reopened);assert.equal(resumed.table.hand.length,5);assert.equal(await reopened.locator('#hand-count').textContent(),'5 cards');assert.equal(await reopened.locator('#hand .card').count(),5);assert.equal(await reopened.locator('.incoming-card').count(),0,'Reopening mid-deal must not replay a stock receipt');await fits(reopened);await fresh.close();
+        }
       }
       room=await read(host);assert.equal(room.table.lastDeal.status,'completed');if(count===4){for(const page of pages)assert.equal(await page.locator('.seat-dealer').getAttribute('data-player'),room.table.lastDeal.dealer,'Keep the completed deal participants inspectable after the next dealer rotates');}await host.screenshot({path:'/tmp/pastimer-thousand-mobile.png',fullPage:true});
       for(const page of pages)for(const button of await page.locator('.seat-hand:not(:disabled)').all()){await button.click();assert.equal(await page.locator('#inspector .playing-card').count(),3);await page.getByRole('button',{name:'Close trick',exact:true}).click();}

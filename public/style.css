@@ -102,10 +102,10 @@ body.in-room #identity{font-size:12px}
 #room .hand .card:disabled{opacity:1}
 #incoming-zone:empty{display:none}
 #incoming-zone{display:flex;gap:6px;flex:none}
-.incoming-card{display:flex;flex-direction:column;align-items:center;gap:2px;background:#243c43;color:#e8e8d6;padding:6px;border:1px solid var(--gold);box-shadow:none;font-size:10px;max-width:120px}
-.incoming-card>.playing-card,.incoming-card>.card-back{width:62px;height:auto}
-.incoming-card>span:not(.playing-card):not(.card-back){font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.incoming-card small{font-size:9px;color:var(--gold)}
+.incoming-card{display:flex;align-items:center;justify-content:center;background:transparent;padding:4px;border:2px solid var(--gold);border-radius:10px;box-shadow:0 0 0 3px #e5bc7326,0 0 16px #e5bc7340;animation:receipt-glow 1.6s ease-in-out infinite alternate}
+.incoming-card>.playing-card,.incoming-card>.card-back{width:clamp(56px,16vw,88px);height:auto;margin:0}
+#room[data-receiving=true] .hand{filter:brightness(.7)}
+@keyframes receipt-glow{to{box-shadow:0 0 0 5px #e5bc7340,0 0 22px #e5bc7370}}
 #room .action-dock{width:100%;max-width:none;margin:0;padding:0;min-height:0;gap:5px;align-items:stretch}
 #room .action-dock>button{min-height:36px;max-width:none;flex:0 1 auto;padding:7px 11px;font-size:12px}
 #room .inline-form{min-width:128px;max-width:none;min-height:38px;padding:2px;flex:1}

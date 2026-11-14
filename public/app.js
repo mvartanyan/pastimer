@@ -76,7 +76,8 @@ function render(next) {
   if(room.phase==='committing'&&!room.deck.acknowledgements.includes(me.id))$('table-actions').append(button('Save & acknowledge deck',async()=>{saveReceipt();await command({type:'acknowledge',shuffleId:room.deck.shuffleId,commitment:room.deck.commitment});}));
   const gifts=room.table?.kind==='thousand'?incoming(room,me):[],held=new Set(gifts.map(g=>g.card));
   const hand=sortedHand((room.table?.hand??[]).filter(c=>!held.has(c)),sortMode,room.game),chosen=room.table?.kind==='thousand'?selectedTransfers(room):[];
-  $('hand-zone').hidden=hand.length===0&&gifts.length===0;$('hand-count').textContent=`${hand.length+gifts.length} cards`;
+  $('hand-zone').hidden=hand.length===0&&gifts.length===0;$('hand-count').textContent=`${room.table?.hand?.length??0} cards`;
+  $('room').dataset.receiving=String(gifts.length>0);$('sort-hand').hidden=gifts.length>0;
   $('sort-hand').textContent=`Sort: ${sortMode}`;$('sort-hand').setAttribute('aria-label',`Sort hand by ${sortMode==='suit'?'rank':'suit'}`);
   $('incoming-zone').replaceChildren();
   $('hand').replaceChildren(...hand.map(code=>{const card=playingCard(code,{interactive:true,selected:chosen.includes(code)});card.onclick=()=>{if(room.table?.kind==='thousand')handCard(code,{room,me,send:action=>command({type:'thousand',action}),run,repaint});else run(()=>command({type:'play',card:code}));};return card;}));
