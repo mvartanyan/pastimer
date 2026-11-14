@@ -71,7 +71,8 @@ function render(next) {
   if(room.phase==='committing'&&!room.deck.acknowledgements.includes(me.id))$('table-actions').append(button('Save & acknowledge deck',async()=>{saveReceipt();await command({type:'acknowledge',shuffleId:room.deck.shuffleId,commitment:room.deck.commitment});}));
   const hand=sortedHand(room.table?.hand??[],sortMode,room.game);$('hand-zone').hidden=hand.length===0;$('hand-count').textContent=`· ${hand.length} cards`;
   $('sort-hand').textContent=`↕ Sorted by ${sortMode}`;$('sort-hand').setAttribute('aria-label',`Sort hand by ${sortMode==='suit'?'rank':'suit'}`);
-  $('hand').replaceChildren(...hand.map(code=>{const card=playingCard(code,{interactive:true,selected:selected===code});card.onclick=()=>run(()=>{selected=code;render(room);});return card;}));
+  // Selecting a card is local input and must not be blocked by an in-flight room refresh.
+  $('hand').replaceChildren(...hand.map(code=>{const card=playingCard(code,{interactive:true,selected:selected===code});card.onclick=()=>{selected=code;render(room);};return card;}));
   $('audit').disabled=false;$('audit').textContent='Download audit record';
   if(room.phase==='playing')for(const action of room.table?.actions??[]){const e=button(action.label,()=>command({type:action.type,...(action.input==='card'?{card:selected}:{})}));e.disabled=action.input==='card'&&!selected;$('game-actions').append(e);}
   $('commitment').textContent=room.deck?`Shuffle ${room.deck.shuffleId}\nSHA-256 ${room.deck.commitment}`:'The deck hash will appear before dealing.';

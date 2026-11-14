@@ -48,6 +48,19 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
   for(const page of pages) await page.locator('#hand .card').first().waitFor();
   assert.equal(await a.locator('#hand .card').count(),5);
   await a.screenshot({path:'/tmp/pastimer-mobile.png',fullPage:true});
+  // Hold a background refresh open: local card selection must still respond to a tap.
+  let releaseRefresh,markRefreshStarted;
+  const refreshHeld=new Promise(resolve=>{releaseRefresh=resolve;});
+  const refreshStarted=new Promise(resolve=>{markRefreshStarted=resolve;});
+  await a.route(`${base}/api/rooms/${code}`,async route=>{
+    const response=await route.fetch();markRefreshStarted();await refreshHeld;await route.fulfill({response});
+  },{times:1});
+  await refreshStarted;
+  try{
+    await a.locator('#hand .card').first().click();
+    assert.equal(await a.locator('#hand .card').first().getAttribute('aria-pressed'),'true','Card selection must work during a background refresh');
+    assert.equal(await a.getByRole('button',{name:'Play selected card'}).isEnabled(),true);
+  }finally{releaseRefresh();}
   for(let round=0;round<5;round++){
     for(const page of pages){
       const loseResponse=round===0 && page===a;
