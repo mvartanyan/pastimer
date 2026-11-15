@@ -13,6 +13,8 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | Highlighted secret receipt with no instructional text | [05-incoming-card.png](05-incoming-card.png) |
 | Top-view rings, marriage card and centred trump (UI fixture) | [06-hearts-trump.png](06-hearts-trump.png) |
 | Cards by owner, leader and trick winner highlighted (UI fixture) | [07-trick-owners.png](07-trick-owners.png) |
+| Empty hand retains the same field and ten pale slots (UI fixture, November 15) | [08-empty-hand.png](08-empty-hand.png) |
+| Finished-match laurel and next actions (UI fixture, November 15) | [09-victory.png](09-victory.png) |
 
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 
@@ -22,3 +24,5 @@ node scripts/capture-screenshots.mjs
 ```
 
 The trump-marker preview uses the controlled legal-view fixture in `tests/marriage-browser.mjs`. The incoming-card preview comes from the receipt step in `tests/thousand-browser.mjs`. The capture helper writes the other four previews to `artifacts/screenshots/`, which is ignored by Git. Review the resulting images and copy the selected PNGs into this directory to update the committed gallery. No real Telegram bot token is required.
+
+The first seven images record the November 14 interface. The November 15 update adds fixed hand slots, captured-point scores, icon-only barrel markers and a persistent language switch. Run `node tests/marriage-browser.mjs` for the latest empty-hand and victory fixtures in `/tmp/pastimer-empty-hand.png` and `/tmp/pastimer-victory.png`.

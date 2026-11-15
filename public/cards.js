@@ -62,8 +62,8 @@ export function sortedHand(cards,mode='suit',game='thousand'){
 }
 export function layoutHand(){
   const hand=document.getElementById('hand');if(!hand?.children.length)return;
-  const n=hand.children.length,available=Math.max(120,hand.clientWidth-8),height=Math.max(74,hand.clientHeight-14),width=Math.min(112,height*5/7,available);
+  const n=hand.children.length,available=Math.max(120,hand.clientWidth-8),height=Math.max(60,hand.clientHeight-8),width=Math.min(112,height*5/7,available);
   const overlap=n>1?Math.max(0,(n*width-available)/(n-1)):0;
-  hand.style.setProperty('--card-width',`${width}px`);hand.style.setProperty('--overlap',`${overlap}px`);
+  hand.style.setProperty('--card-width',`${width}px`);hand.parentElement.style.setProperty('--card-width',`${width}px`);hand.style.setProperty('--overlap',`${overlap}px`);
   for(const [i,card]of [...hand.children].entries()){card.style.setProperty('--tilt','0deg');card.style.setProperty('--arc','0px');card.style.setProperty('--card-index',String(i));}
 }

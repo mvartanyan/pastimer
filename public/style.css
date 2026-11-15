@@ -206,3 +206,113 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 @media(max-height:600px){#room .seat-self{max-width:94%}#room .seat-self .avatar{display:none}#room .seat-self .seat-info{display:flex;align-items:center;gap:5px}#room .seat-self .seat-name{max-width:80px}#room .seat-self .seat-score{margin:0}#room .seat-self .seat-role{display:inline;margin:0}.marriage-rings svg{width:49px;height:35px}#room .trump-marker{min-height:29px}#room .trump-suit{font-size:30px}}
 
 @media(max-height:500px) and (min-aspect-ratio:1/1){#room .seat-left,#room .seat-right{max-width:32%;padding:4px 5px}#room .seat-left .avatar,#room .seat-right .avatar{display:none}#room .seat-info{min-width:0}#room .seat-name{font-size:10px}#room .seat-score{flex-wrap:wrap;row-gap:0}}
+
+/* One viewport formula: fixed heading, hand and action rows; only the felt gets the remainder. */
+#room{grid-template-rows:40px 24px minmax(0,1fr)}
+#room .phase-bar{height:24px;min-height:24px}#room #phase{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#room .table-shell{--hand-row:clamp(112px,22vh,158px);--action-row:44px;grid-template-rows:minmax(0,1fr) var(--hand-row) var(--action-row)}
+#room .hand-zone{height:100%;min-height:0;display:flex;flex-direction:column}
+#room .hand-heading{height:22px;min-height:22px;flex:none}
+.hand-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:120px;height:22px}
+#marriage-options{width:24px;height:20px;display:flex;align-items:center;justify-content:center}
+#marriage-options .marriage-rings svg{width:22px;height:16px}
+#marriage-choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+#room .hand-content{position:relative;flex:1;min-height:0;width:100%}
+#room .hand{height:100%;min-height:0;width:100%;padding:4px;gap:0}
+.hand-slot{position:relative;flex:none;width:var(--card-width,70px);height:calc(var(--card-width,70px)*1.4);margin-left:calc(-1*var(--overlap,30px));z-index:var(--card-index,0)}
+.hand-slot:first-child{margin-left:0}
+#room .hand .hand-slot>.card{width:100%;height:100%;margin:0;transform:none}
+.card-placeholder{display:block;width:100%;height:100%;border:1px solid #e5bc7330;border-radius:7px;background:linear-gradient(135deg,#ffffff08,#ffffff02);box-shadow:inset 0 0 0 3px #ffffff03;pointer-events:none}
+#incoming-zone{position:absolute;inset:4px;display:block;z-index:30;pointer-events:none}
+.incoming-card{position:absolute;pointer-events:auto;width:var(--card-width,70px);height:calc(var(--card-width,70px)*1.4);padding:2px}
+.incoming-card>.playing-card,.incoming-card>.card-back{width:100%;height:100%}
+#room .action-dock{height:44px;min-height:44px;max-height:44px;flex-wrap:nowrap;align-items:stretch;overflow:visible}
+#room .action-dock>button{min-height:36px;max-height:40px;font-size:11px;padding:6px 9px;white-space:nowrap}
+#room .inline-form{min-width:100px;max-height:40px;flex:1}
+#room .amount-step{width:18px}#room .inline-form input{width:34px}
+#room .seat{width:44%;max-width:190px;height:64px;padding:4px 6px}
+#room .seat-self{width:80%;max-width:280px;height:64px}
+#room .seat-info{min-width:0;flex:1}
+#room .seat-name{height:18px;display:flex;align-items:center;gap:4px;max-width:none;min-width:0}
+.player-name{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.barrel-marker{display:flex;align-items:center;width:15px;height:18px;flex:none}
+.barrel-marker svg{width:15px;height:18px}
+#room .seat-score{height:21px;min-height:21px;flex-wrap:nowrap;gap:3px;margin:0;font-size:10px;white-space:nowrap}
+#room .seat-score strong{font-size:13px;min-width:23px;font-variant-numeric:tabular-nums}
+#room .seat-hand{gap:3px;padding:0;min-width:29px;margin-left:2px}
+#room .seat-hand>span:not(.card-back){min-width:13px;font-variant-numeric:tabular-nums}
+#room .pile-available{display:none}
+#room .seat-role{display:block;height:12px;min-height:12px;margin:0;font-size:9px;white-space:nowrap}
+#room .stick-marks{position:absolute;right:3px;bottom:1px;font-size:8px;color:var(--gold)}
+#room .trump-marker,#room .trump-marker[data-trump=none]{width:112px;height:46px;min-height:46px}
+#lobby-tools{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 18px}
+#lobby-tools>button{font-size:12px}
+#archive-dialog,#record-dialog{width:min(94vw,780px);overflow:auto}
+.archive-game{display:flex;flex-direction:column;align-items:flex-start;text-align:left;width:100%;gap:7px;padding:14px;margin:10px 0;white-space:normal;overflow-wrap:anywhere}
+.archive-game span,.archive-game small{color:var(--muted);font-size:12px}
+.archive-scores{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+.archive-scores td,.archive-scores th{text-align:left;padding:8px;border-bottom:1px solid #ffffff18}
+.archive-scores td:last-child,.archive-scores th:last-child{text-align:right}
+.game-times{white-space:pre-line;font-size:12px}
+.record-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+#record-content h3{margin-top:18px;font-size:13px}
+#record-content details{border-bottom:1px solid #ffffff20;padding:10px 0;font-size:12px}
+#record-content summary{cursor:pointer;overflow-wrap:anywhere}
+#record-content code,#record-content pre{display:block;font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;color:#c6d5b0}
+#log-filter{margin:12px 0}
+#room[data-presentation=finished] #seats,#room[data-presentation=finished] .table-hud{visibility:hidden}
+#room[data-presentation=finished] .deal-summary{position:absolute;inset:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:12;background:#20473b}
+#room .deal-summary h2{font-size:22px;margin:3px 0 6px}
+#room .result-scores{gap:5px;flex-wrap:wrap;align-items:center;width:100%}
+#room .result-score{min-width:48px;flex:1;max-width:100px}
+#room .result-score>span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+#room .result-score strong{font-size:22px;margin:3px 0}
+#room .result-score.match-winner{flex:0 0 100%;max-width:none;height:88px}
+#room .match-winner>span{font-size:14px;color:#ffe2a1}
+#room .laurel-score{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:118px;height:56px;font-size:32px;color:#ffe4a6}
+.laurel-wreath{position:absolute;inset:-20px -10px -12px;pointer-events:none}
+.laurel-wreath svg{width:100%;height:100%}
+@media(max-height:600px){
+ #room .table-shell{--hand-row:112px}
+ #room .seat-left,#room .seat-right{width:32%;max-width:32%;height:52px;padding:3px 5px}
+ #room .seat-left .avatar,#room .seat-right .avatar{display:none}
+ #room .seat-self{height:32px;width:94%;max-width:94%}
+ #room .seat-self .avatar{display:none}
+ #room .seat-self .seat-info{display:flex;align-items:center;gap:5px}
+ #room .seat-self .seat-name{width:85px;max-width:85px;flex:none}
+ #room .seat-self .seat-role{display:inline;height:12px}
+ #room .seat-name{font-size:10px;height:15px}
+ #room .seat-score{height:19px;min-height:19px;font-size:9px}
+ #room .seat-score strong{font-size:11px;min-width:18px}
+ #room .seat-role{font-size:8px;height:10px;min-height:10px}
+ #room .trump-marker,#room .trump-marker[data-trump=none]{width:92px;height:37px;min-height:37px}
+ #room .deal-summary h2{font-size:18px}
+}
+@media(max-height:500px) and (min-aspect-ratio:1/1){
+ #room{grid-template-rows:40px 24px minmax(0,1fr) 44px}
+ #room .hand-zone{align-self:stretch;min-height:0}
+}
+
+#incoming-zone{inset:0}
+#room .seat-score>.score-kind{width:20px;flex:none;white-space:normal;font-size:8px;line-height:8px}
+#lobby-tools>button{min-height:54px;font-size:14px;flex:1 1 180px;padding:14px}
+#lobby-tools>#open-archive{flex:0 1 auto}
+.seat-setting{display:flex;flex-direction:column;gap:8px;font-size:12px;color:#a4b7bb}
+.seat-choices{display:flex;gap:6px}
+.seat-choices>button{flex:1;min-height:46px;padding:8px;font-size:14px;background:#0e202b;color:#dce4dd;border:1px solid #ffffff26;box-shadow:none}
+.seat-choices>button[aria-pressed=true]{background:#e5bc73;color:#20302d;border-color:#e5bc73}
+@media(max-width:649px){#lobby-tools{display:grid;grid-template-columns:1fr 1fr}#lobby-tools>button{min-width:0;font-size:13px}#lobby-tools>#open-archive{grid-column:1/-1}}
+.header-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+#language{width:auto;max-width:105px;height:26px;margin:0;padding:1px 5px;font-size:11px;flex:none}
+#identity{flex:0 1 auto}
+#room .hand .card.is-unplayable{filter:grayscale(.9) brightness(.45);box-shadow:none}
+#room .hand .card.is-playable{filter:brightness(1.06);box-shadow:0 0 0 2px #f4d99c,0 0 9px #e5bc7350}
+#room .hand .card.announces-marriage{box-shadow:0 0 0 3px #ffdb83,0 0 14px #e5bc7390}
+@media(max-height:600px){#room .seat-left,#room .seat-right{width:30%;max-width:30%}#room .seat-score{gap:2px}#room .seat-score strong{min-width:17px}#room .seat-hand{min-width:28px;margin-left:0;gap:2px}}
+
+#room .seat-score>.score-kind{width:24px;overflow-wrap:anywhere;font-size:7.5px;line-height:7.5px}
+
+.hand-slot{pointer-events:none}#room .hand .hand-slot>.card{pointer-events:auto}
+#room .action-dock{display:flex}
+#room[data-presentation=finished] .deal-summary{width:auto;height:auto;border-radius:30px}
+#room[data-presentation=finished] .result-score>small{display:none}

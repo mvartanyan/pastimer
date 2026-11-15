@@ -58,7 +58,7 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
   },{times:1});
   await refreshStarted;
   try{
-    await a.locator('#hand .card').first().click();
+    await a.locator('#hand .card').first().click({position:{x:8,y:18}});
     await a.waitForFunction(()=>document.querySelectorAll('#hand .card').length===4,null,{timeout:5000});
   }finally{releaseRefresh();}
   // The refresh carries the pre-move snapshot; it must not restore the played card.
@@ -79,7 +79,7 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
         };
         await page.route(pattern,loseCommittedResponse);
       }
-      await page.locator('#hand .card').first().click();
+      await page.locator('#hand .card').first().click({position:{x:8,y:18}});
       try { await page.waitForFunction(expected=>document.querySelectorAll('#hand .card').length===expected,4-round,{timeout:10000}); } catch(e) {console.log('NOTICE',await page.locator('#notice').textContent());await page.screenshot({path:'/tmp/pastimer-failure.png',fullPage:true});throw e;}
       if(loseResponse){
         await page.getByRole('button',{name:'Retry previous move'}).waitFor();
@@ -99,6 +99,7 @@ browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? (
   assert.deepEqual(result,{phase:'finished',moves:10,proof:52});
   await a.reload();await a.getByText('Game complete.',{exact:false}).waitFor();
   assert.deepEqual(errors,[]);
+  await a.getByRole('button',{name:'Record',exact:true}).click();await a.locator('#record-content .archive-scores').waitFor();assert.match(await a.locator('#record-content').innerText(),/Final score/);assert.match(await a.locator('#record-content').innerText(),/Started:/);assert.match(await a.locator('#record-content').innerText(),/Ended:/);assert.equal(await a.locator('.deck-records details').count(),1);await a.locator('.deck-records summary').first().click();assert.match(await a.locator('.deck-records code').textContent(),/SHA-256 [a-f0-9]{64}/);await a.getByRole('button',{name:'Close record',exact:true}).click();await a.getByRole('button',{name:'Lobby',exact:true}).click();await a.getByRole('button',{name:'Played games',exact:true}).click();await a.locator('.archive-game').first().waitFor();assert.match(await a.locator('.archive-game').first().innerText(),/Finished/);await a.getByRole('button',{name:'Close archive',exact:true}).click();
   console.log('PASS: two independent browsers, mobile hand, join/start/ack, all 10 moves, final proof, lost-response retry across reload, no browser errors');
 }finally{
   if(browser) await browser.close();

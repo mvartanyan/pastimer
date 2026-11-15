@@ -1,5 +1,5 @@
 use crate::{
-    model::{Action, Card, GameState, Lifecycle, Room, thousand_deck},
+    model::{Card, thousand_deck},
     thousand::{self, Play, Suit, Transfer, View},
 };
 
@@ -70,6 +70,41 @@ fn estimate_known(hand: &[Card], played: &[Card], has_entry: bool) -> Estimate {
     }
     best
 }
+fn target(hand: &[Card]) -> u16 {
+    let bound = estimate(hand).points;
+    let mut likely = 0u16;
+    let mut aces = 0u16;
+    for suit in [Suit::H, Suit::D, Suit::C, Suit::S] {
+        let has = |rank: &str| {
+            hand.iter()
+                .any(|c| c.code() == format!("{rank}{}", suit.code()))
+        };
+        if has("A") {
+            aces += 1;
+            likely += 20;
+        }
+        if has("10") {
+            likely += if has("A") { 20 } else { 10 };
+        }
+        if has("K") {
+            likely += if has("A") && has("10") { 15 } else { 5 };
+        }
+        if has("Q") && has("A") && has("10") && has("K") {
+            likely += 10;
+        }
+    }
+    if aces > 0 {
+        if let Some(marriage) = marriages(hand).map(Suit::marriage).max() {
+            likely += marriage;
+        }
+        if aces > 1 {
+            likely += (aces - 1) * 5;
+        }
+    }
+    // Risk a small amount beyond the floor; never assume a marriage without entry.
+    let estimate = bound.max(likely.saturating_sub(10));
+    (estimate / 5 * 5).min(thousand::MAX_ORDER)
+}
 fn distribution(hand: &[Card], recipients: &[crate::model::Player]) -> Vec<Transfer> {
     let mut best = None;
     for a in 0..hand.len() {
@@ -81,6 +116,7 @@ fn distribution(hand: &[Card], recipients: &[crate::model::Player]) -> Vec<Trans
                 .map(|(_, c)| c.clone())
                 .collect();
             let score = (
+                target(&kept),
                 estimate(&kept).points,
                 20 - thousand::points(&hand[a]) - thousand::points(&hand[b]),
                 10 - thousand::rank(&hand[a]) - thousand::rank(&hand[b]),
@@ -102,10 +138,10 @@ fn distribution(hand: &[Card], recipients: &[crate::model::Player]) -> Vec<Trans
             .collect()
     })
 }
-fn choose(view: View) -> Option<thousand::Action> {
+pub(crate) fn choose(view: View) -> Option<thousand::Action> {
     let c = &view.controls;
     if c.pass {
-        let bound = estimate(&view.hand).points.min(thousand::MAX_ORDER);
+        let bound = target(&view.hand);
         if c.here && bound >= view.order {
             return Some(thousand::Action::Here);
         }
@@ -123,7 +159,9 @@ fn choose(view: View) -> Option<thousand::Action> {
         });
     }
     if c.order {
-        return Some(thousand::Action::Order { amount: view.order });
+        return Some(thousand::Action::Order {
+            amount: view.order.max(target(&view.hand)),
+        });
     }
     if c.legal_cards.is_empty() {
         return None;
@@ -173,16 +211,6 @@ fn choose(view: View) -> Option<thousand::Action> {
     };
     Some(thousand::Action::Play { card, announce })
 }
-pub fn next(room: &Room, now: i64) -> Option<(String, Action)> {
-    let Lifecycle::Playing(GameState::Thousand(state)) = &room.lifecycle else {
-        return None;
-    };
-    room.computers.iter().find_map(|id| {
-        choose(state.view(id, &room.players, now))
-            .map(|action| (id.clone(), Action::Thousand { action }))
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,6 +249,86 @@ mod tests {
             last_deal: None,
             audit_deals: 0,
         }
+    }
+    #[test]
+    fn bids_beyond_the_floor_and_reassesses_after_stock() -> crate::error::Result<()> {
+        let hand = cards("AC 10C AH 10H KS QS 9D")?;
+        assert!(estimate(&hand).points < 110);
+        let mut auction = view(hand.clone());
+        auction.controls.pass = true;
+        auction.controls.bid_min = Some(110);
+        assert!(matches!(
+            choose(auction),
+            Some(thousand::Action::Bid { amount: 110 })
+        ));
+        let mut after = view(hand);
+        after.order = 100;
+        after.controls.order = true;
+        assert!(
+            matches!(choose(after), Some(thousand::Action::Order { amount }) if amount > 100 && amount % 5 == 0)
+        );
+        Ok(())
+    }
+    #[test]
+    fn unseen_opponents_and_sealed_stock_cannot_change_the_policy() -> crate::error::Result<()> {
+        use crate::game::Outcome;
+        let players = vec![
+            crate::model::Player {
+                id: "computer".into(),
+                name: "Computer".into(),
+            },
+            crate::model::Player {
+                id: "a".into(),
+                name: "A".into(),
+            },
+            crate::model::Player {
+                id: "b".into(),
+                name: "B".into(),
+            },
+        ];
+        let state = thousand::State::new(&players, thousand::Settings::default(), 2)?;
+        let state = match state.deal_cards(thousand_deck(), &players)? {
+            Outcome::Continue { state, .. }
+            | Outcome::Shuffle { state, .. }
+            | Outcome::Finished { state, .. } => state,
+        };
+        for phase in [
+            serde_json::json!({"kind":"auction","eligible":[0,1,2],"leader":0,"turn":0,"last_pass":false}),
+            serde_json::json!({"kind":"trick","turn":0,"plays":[]}),
+        ] {
+            let mut original = serde_json::to_value(&state)?;
+            original["phase"] = phase;
+            let before: thousand::State = serde_json::from_value(original.clone())?;
+            let mut hidden = Vec::new();
+            for id in ["a", "b"] {
+                hidden.extend(
+                    original["hands"][id]
+                        .as_array()
+                        .ok_or_else(crate::error::Error::internal)?
+                        .clone(),
+                );
+            }
+            hidden.extend(
+                original["stock"]
+                    .as_array()
+                    .ok_or_else(crate::error::Error::internal)?
+                    .clone(),
+            );
+            hidden.reverse();
+            original["hands"]["a"] = serde_json::json!(&hidden[..7]);
+            original["hands"]["b"] = serde_json::json!(&hidden[7..14]);
+            original["stock"] = serde_json::json!(&hidden[14..]);
+            let after: thousand::State = serde_json::from_value(original)?;
+            assert_eq!(
+                serde_json::to_value(before.view("computer", &players, 0))?,
+                serde_json::to_value(after.view("computer", &players, 0))?
+            );
+            assert_eq!(
+                serde_json::to_value(choose(before.view("computer", &players, 0)))?,
+                serde_json::to_value(choose(after.view("computer", &players, 0)))?
+            );
+        }
+        Ok(())
     }
     #[test]
     fn bids_then_cashes_an_ace_before_declaring_the_protected_marriage() -> crate::error::Result<()>
@@ -354,7 +462,11 @@ mod tests {
             for player in &players {
                 let own = game.view(&player.id, &players, now);
                 let action = if player.id == "computer" {
-                    choose(own)
+                    if own.controls.order {
+                        Some(thousand::Action::Order { amount: own.order })
+                    } else {
+                        choose(own)
+                    }
                 } else if own.controls.pass {
                     Some(thousand::Action::Pass)
                 } else {

@@ -14,7 +14,7 @@ let browser;
 try{
   const base=await new Promise((resolve,reject)=>{let output='';const timer=setTimeout(()=>reject(new Error('Server startup timed out')),15000);server.stdout.on('data',chunk=>{output+=chunk;const match=output.match(/Pastimer listening on (http:\/\/[^\s]+)/);if(match){clearTimeout(timer);resolve(match[1]);}});server.once('error',reject);server.once('exit',code=>{clearTimeout(timer);reject(new Error(`Server exit ${code}`));});});
   browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),headless:true});
-  for(const humans of [1,2]){
+  for(const [seats,humans] of [[3,1],[3,2],[4,1]]){
     const contexts=[],pages=[],byId=new Map(),errors=[];
     for(let i=0;i<humans;i++){
       const context=await browser.newContext({viewport:{width:390,height:844}});contexts.push(context);await context.route('https://telegram.org/**',route=>route.abort());
@@ -23,20 +23,20 @@ try{
       const me=await page.evaluate(async()=>await(await fetch('/api/me')).json());byId.set(me.id,page);
     }
     const host=pages[0];
-    await host.getByLabel('Computer seats').selectOption(String(3-humans));
+    await host.getByLabel('Computer seats').selectOption(String(seats-humans));
     if(humans===1)assert.match(await host.locator('#computer-note').textContent(),/Just you/);
     else assert.match(await host.locator('#computer-note').textContent(),/Invite 1 friend/);
-    await host.getByRole('button',{name:'Create a table'}).click();await host.locator('#room-code').waitFor({state:'visible'});const code=await host.locator('#room-code').textContent();
+    if(humans===1){await host.locator(seats===4?'#solo-four':'#solo-three').click();await host.waitForFunction(()=>['auction','stock','distribution','preparation','trick','closing'].includes(document.querySelector('#room').dataset.phase));}else await host.getByRole('button',{name:'Create a table'}).click();await host.locator('#room-code').waitFor({state:'visible'});const code=await host.locator('#room-code').textContent();
     if(humans===2){
       assert.equal(await host.getByRole('button',{name:'Start game',exact:true}).isDisabled(),true);
       await pages[1].getByLabel('Table code').fill(code);await pages[1].getByRole('button',{name:'Join table'}).click();
     }
     const read=async page=>await page.evaluate(async code=>await(await fetch(`/api/rooms/${code}`)).json(),code);
     const act=async(page,locator)=>{await locator.waitFor();const version=Number(await page.locator('#room').getAttribute('data-version'));await locator.click(await locator.evaluate(e=>e.classList.contains('card'))?{position:{x:8,y:18}}:{});await page.waitForFunction(v=>Number(document.getElementById('room').dataset.version)>v,version);};
-    await act(host,host.getByRole('button',{name:'Start game',exact:true}));
-    let room=await read(host);assert.equal(room.computers.length,3-humans);assert.equal(room.players.length,3);
+    if(humans!==1)await act(host,host.getByRole('button',{name:'Start game',exact:true}));
+    let room=await read(host);assert.equal(room.computers.length,seats-humans);assert.equal(room.players.length,seats);
     const dealer=byId.get(room.table.dealer);
-    if(dealer)await act(dealer,dealer.getByRole('button',{name:'Shuffle & deal',exact:true}));
+    if(humans===1){}else if(dealer)await act(dealer,dealer.getByRole('button',{name:'Shuffle & deal',exact:true}));
     else await act(host,host.getByRole('button',{name:'Ask computer to deal',exact:true}));
     for(let step=0;step<90;step++){
       room=await read(host);
@@ -60,10 +60,10 @@ try{
     }
     room=await read(host);for(let i=1;i<(room.auctionCalls??[]).length;i++){const call=room.auctionCalls[i];if(room.computers.includes(call.player))assert.ok(call.at-room.auctionCalls[i-1].at>=2800,'Computer calls must be paced rather than committed in a burst');}assert.equal(room.table.auditDeals,1);assert.equal(room.table.lastDeal.status,'completed');assert.equal(room.table.phase,'awaitShuffle');
     const audit=await host.evaluate(async code=>await(await fetch(`/api/rooms/${code}/audit`)).json(),code);
-    const file=join(directory,`audit-${humans}.json`);await writeFile(file,JSON.stringify(audit));const verified=JSON.parse(execFileSync(join(dirname(binary),'verify-audit'),[file],{encoding:'utf8'}));assert.equal(verified.valid,true);assert.equal(verified.deals,1);
+    const file=join(directory,`audit-${seats}-${humans}.json`);await writeFile(file,JSON.stringify(audit));const verified=JSON.parse(execFileSync(join(dirname(binary),'verify-audit'),[file],{encoding:'utf8'}));assert.equal(verified.valid,true);assert.equal(verified.deals,1);
     assert.ok(audit.commands.some(c=>room.computers.includes(c.actor)&&c.action.action.type==='play'));
     await host.reload();await host.locator('#room-code').waitFor({state:'visible'});assert.equal((await read(host)).table.auditDeals,1);assert.deepEqual(errors,[]);
-    console.log(`PASS: ${humans} human(s), ${3-humans} computer(s), real lobby controls, complete deal, legal automatic turns, verified audit and reload`);
+    console.log(`PASS: ${humans} human(s), ${seats-humans} computer(s), ${seats} seats, real lobby controls, complete deal, legal automatic turns, verified audit and reload`);
     for(const context of contexts)await context.close();
   }
 }finally{

@@ -7,7 +7,9 @@ use crate::{
 };
 use axum::{
     Json, Router,
-    extract::{ConnectInfo, DefaultBodyLimit, Path, Request, State, rejection::JsonRejection},
+    extract::{
+        ConnectInfo, DefaultBodyLimit, Path, Query, Request, State, rejection::JsonRejection,
+    },
     http::{HeaderMap, StatusCode, header},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -51,6 +53,8 @@ pub fn router(store: Store, config: Config) -> Result<Router> {
     Ok(Router::new()
         .route("/",get(||async{([(header::CONTENT_TYPE,"text/html; charset=utf-8")],include_str!("../public/index.html"))}))
         .route("/app.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/app.js"))}))
+        .route("/i18n.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/i18n.js"))}))
+        .route("/archive.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/archive.js"))}))
         .route("/cards.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/cards.js"))}))
         .route("/thousand.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/thousand.js"))}))
         .route("/style.css",get(||async{([(header::CONTENT_TYPE,"text/css")],include_str!("../public/style.css"))}))
@@ -59,6 +63,8 @@ pub fn router(store: Store, config: Config) -> Result<Router> {
         .route("/api/auth",post(login)).route("/api/me",get(me))
         .route("/api/rooms",post(create)).route("/api/rooms/{code}",get(read))
         .route("/api/rooms/active",get(active_room))
+        .route("/api/rooms/history",get(history))
+        .route("/api/rooms/{code}/record",get(record))
         .route("/api/rooms/{code}/join",post(join)).route("/api/rooms/{code}/commands",post(command))
         .route("/api/rooms/{code}/audit",get(audit))
         .fallback(||async{Error::new(StatusCode::NOT_FOUND,"Not found")})
@@ -287,4 +293,25 @@ async fn command(
     Ok(Json(
         state.engine.command(&code, &p.id, parsed(body)?).await?,
     ))
+}
+
+#[derive(Deserialize)]
+struct HistoryQuery {
+    before: Option<i64>,
+}
+async fn history(
+    State(state): State<App>,
+    headers: HeaderMap,
+    Query(query): Query<HistoryQuery>,
+) -> Result<Json<Value>> {
+    let player = player(&state, &headers).await?;
+    Ok(Json(state.engine.history(&player.id, query.before).await?))
+}
+async fn record(
+    State(state): State<App>,
+    headers: HeaderMap,
+    Path(code): Path<String>,
+) -> Result<Json<Value>> {
+    let player = player(&state, &headers).await?;
+    Ok(Json(state.engine.record(&code, &player.id).await?))
 }

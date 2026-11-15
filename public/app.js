@@ -1,9 +1,12 @@
 import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick,bindDistributionDrag,layoutTrick} from '/thousand.js';
+import {installLanguages} from '/i18n.js';
+import {installArchive} from '/archive.js';
 import {playingCard,cardBack,sortedHand,layoutHand} from '/cards.js';
 const $ = id => document.getElementById(id);
 let me, room, busy = false, refreshing = false, serverOffset=0;
 let sortMode=localStorage.getItem('pastimer-hand-sort')??'suit';
-let pending=null;
+let pending=null,handSlotKey='',handSlots=[];
+const archive=installArchive({api,run,openTable:async code=>render(await api(`/rooms/${code}`))});
 const stored=key=>{try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}};
 const roomKey=()=>`pastimer-room:${me.id}`;
 const pendingKey=()=>`pastimer-pending:${me.id}`;
@@ -21,8 +24,8 @@ function notice(message = '') { $('notice').textContent = message; }
 function element(tag, text, className) { const e = document.createElement(tag); e.textContent = text; if(className) e.className = className; return e; }
 function button(text, handler, className) { const e = element('button',text,className); e.onclick = () => run(handler); return e; }
 async function run(fn) { if(busy)return; busy=true; try { notice(); await fn(); } catch(e) { notice(e.message); } finally { busy=false; } }
-function lobby(){if(room)rememberRoom(room.code);document.body.classList.remove('in-room');clearThousand();document.querySelector('.intro').hidden=false;room=undefined;$('room').hidden=true;$('lobby').hidden=false;$('resume-table').hidden=!localStorage.getItem(roomKey());try{window.Telegram?.WebApp?.BackButton?.hide?.();window.Telegram?.WebApp?.disableClosingConfirmation?.();}catch{} }
-function signedIn(player){me=player;const old=stored(pendingKey())??(()=>{try{return JSON.parse(sessionStorage.getItem('pending-command')||'null');}catch{return null;}})();if(old?.actor===me.id)setPending(old);$('identity').textContent=player.name;$('login').hidden=true;$('lobby').hidden=false;}
+function lobby(){if(room)rememberRoom(room.code);document.body.classList.remove('in-room');clearThousand();document.querySelector('.intro').hidden=false;room=undefined;$('room').hidden=true;$('lobby').hidden=false;$('lobby-tools').hidden=false;$('resume-table').hidden=!localStorage.getItem(roomKey());try{window.Telegram?.WebApp?.BackButton?.hide?.();window.Telegram?.WebApp?.disableClosingConfirmation?.();}catch{} }
+function signedIn(player){me=player;const old=stored(pendingKey())??(()=>{try{return JSON.parse(sessionStorage.getItem('pending-command')||'null');}catch{return null;}})();if(old?.actor===me.id)setPending(old);$('identity').textContent=player.name;$('login').hidden=true;$('lobby').hidden=false;$('lobby-tools').hidden=false;}
 async function command(action) {
   if(pending && (pending.code!==room.code || JSON.stringify(pending.action)!==JSON.stringify(action))) throw new Error('Retry the previous move before sending a different one.');
   if(!pending) setPending({actor:me.id,code:room.code,version:room.version,requestId:crypto.randomUUID(),action});
@@ -54,11 +57,11 @@ function renderSeats(){
     if(p.id===inactive)position='seat-dealer';
     const box=element('div','',`seat ${position}${isTurn?' is-turn':''}${pile?.top?' has-trick':''}${room.table?.trickLeader===p.id?' is-leader':''}${room.table?.trickWinner===p.id?' is-taking':''}`);box.dataset.player=p.id;if(pile?.top){box.title=`Inspect the last trick won by ${p.name}`;box.onclick=e=>{if(!box.dataset.recipient&&!e.target.closest('.seat-hand'))inspectTrick(room,p.id);};}
     const avatar=element('span',room.computers?.includes(p.id)?'C':p.name.trim().slice(0,1).toUpperCase(),'avatar');avatar.style.setProperty('--avatar-color',colors[index%colors.length]);
-    const info=element('div','','seat-info');info.append(element('div',p.name+(isMe?' - you':''),'seat-name'));
-    const score=element('div','','seat-score');score.append(element('strong',String(seat?.score??room.scores[p.id]??0)),element('span','pts'));
+    const info=element('div','','seat-info');const name=element('div','','seat-name'),barrel=element('span','','barrel-marker');barrel.setAttribute('role','img');barrel.setAttribute('aria-label','On the barrel');barrel.style.visibility=seat?.onBarrel?'visible':'hidden';barrel.innerHTML='<svg viewBox="0 0 20 26" aria-hidden="true"><path d="M5 3Q0 13 5 23Q10 27 15 23Q20 13 15 3Z" fill="#936638" stroke="#e5bc73" stroke-width="1.6"/><path d="M3 7H17M2 18H18M8 3Q5 13 8 24M12 3Q15 13 12 24" fill="none" stroke="#e5bc73" stroke-width="1.4"/><ellipse cx="10" cy="3" rx="5" ry="2" fill="#bd8b4e" stroke="#e5bc73"/></svg>';name.append(element('span',p.name+(isMe?' - you':''),'player-name'),barrel);info.append(name);
+    const score=element('div','','seat-score');const inDeal=room.table?.kind==='thousand'&&!['awaitShuffle','finished'].includes(room.table.phase);score.title=inDeal?`Captured cards: ${seat?.trickPoints??0}; deal total: ${seat?.roundPoints??0}; match score: ${seat?.score??0}`:'Match score';score.append(element('strong',String(inDeal?(seat?.trickPoints??0):(seat?.score??room.scores[p.id]??0))),element('span',inDeal?'trick pts':'match pts','score-kind'));
     if(seat){const hand=element('button','','seat-hand');hand.type='button';hand.disabled=!pile?.top;hand.setAttribute('aria-label',`Last trick won by ${p.name}`);hand.dataset.pilePlayer=p.id;hand.append(cardBack(),element('span',String(seat.count)));if(pile?.top)hand.append(element('span','↗','pile-available'));hand.onclick=()=>inspectTrick(room,p.id);score.append(hand);}
-    if(seat?.sticks)score.append(element('span',`${seat.sticks} sticks`,'stick-marks'));
-    info.append(score);const contract=room.table?.contractor===p.id?`CONTRACT ${room.table.order}`:'',role=[seat?.onBarrel?'BARREL':'',contract||(seat?.role==='dealer'?'DEALER':isTurn&&!room.table?.trickLeader?'TURN':'')].filter(Boolean).join(' / ');if(role)info.append(element('span',role,'seat-role'));box.append(avatar,info);if(room.table?.trickWinner===p.id)box.append(element('span','TAKES TRICK','seat-activity'));else if(room.table?.trickLeader===p.id)box.append(element('span','LEAD','seat-activity'));return box;
+    if(seat?.sticks)score.append(element('span','Ⅰ'.repeat(seat.sticks),'stick-marks'));
+    info.append(score);const contract=room.table?.contractor===p.id?`CONTRACT ${room.table.order}`:'',role=contract||(seat?.role==='dealer'?'DEALER':isTurn&&!room.table?.trickLeader?'TURN':'');info.append(element('span',role,'seat-role'));box.append(avatar,info);if(room.table?.trickWinner===p.id)box.append(element('span','TAKES TRICK','seat-activity'));else if(room.table?.trickLeader===p.id)box.append(element('span','LEAD','seat-activity'));return box;
   }));
 }
 function render(next) {
@@ -66,8 +69,8 @@ function render(next) {
   if(next!==room&&next.table)serverOffset=next.table.serverNow-Date.now();
   room=next;document.body.classList.add('in-room');
   $('room').dataset.phase=room.table?.phase??room.phase;$('room').dataset.version=String(room.version);$('room').dataset.game=room.game;
-  document.querySelector('.intro').hidden=true;rememberRoom(room.code);$('resume-table').hidden=true;try{window.Telegram?.WebApp?.enableClosingConfirmation?.();window.Telegram?.WebApp?.BackButton?.show?.();}catch{}$('room').dataset.playerCount=String(room.players.length);$('lobby').hidden=true;$('room').hidden=false;
-  const dealer=room.table?.seats?.find(s=>s.id===room.table.dealer);$('game-title').textContent=dealer?`Dealer: ${dealer.name}${room.players.length===4?` - ${dealer.score} pts`:''}`:'PRIVATE TABLE';$('game-title').title=$('game-title').textContent;$('room-code').textContent=room.code;
+  document.querySelector('.intro').hidden=true;rememberRoom(room.code);$('resume-table').hidden=true;try{window.Telegram?.WebApp?.enableClosingConfirmation?.();window.Telegram?.WebApp?.BackButton?.show?.();}catch{}$('room').dataset.playerCount=String(room.players.length);$('lobby').hidden=true;$('lobby-tools').hidden=true;$('room').hidden=false;
+  const dealer=room.table?.seats?.find(s=>s.id===room.table.dealer);$('game-title').textContent=dealer?`Dealer: ${dealer.name}`:'PRIVATE TABLE';$('game-title').title=$('game-title').textContent;$('room-code').textContent=room.code;
   $('deal-badge').textContent=room.table?.deal?`DEAL ${String(room.table.deal).padStart(2,'0')}`:`${room.players.length} / ${room.options?.playerCount??4} SEATS`;
   renderSeats();clearThousand();$('table-actions').replaceChildren();$('game-actions').replaceChildren();$('thousand-table').replaceChildren();
   $('phase').textContent={lobby:'Invite your friends. Share the table code.',committing:'The deck is committed. Confirm to start the demo.',playing:`Round ${room.table?.round??''} · choose your card.`,finished:'Game complete. The record is ready to verify.'}[room.phase];
@@ -77,22 +80,23 @@ function render(next) {
   const gifts=room.table?.kind==='thousand'?incoming(room,me):[],held=new Set(gifts.map(g=>g.card));
   const chosen=room.table?.kind==='thousand'?selectedTransfers(room):[];
   const hand=sortedHand((room.table?.hand??[]).filter(c=>!held.has(c)&&!chosen.includes(c)),sortMode,room.game);
-  $('hand-zone').hidden=hand.length===0&&gifts.length===0;$('hand-count').textContent=`${(room.table?.hand?.length??0)-chosen.length} cards`;
-  $('room').dataset.receiving=String(gifts.length>0);$('sort-hand').hidden=gifts.length>0;
+  $('hand-zone').hidden=false;$('hand-count').textContent=`${(room.table?.hand?.length??0)-chosen.length} cards`;
+  $('room').dataset.receiving=String(gifts.length>0);$('sort-hand').style.visibility=gifts.length?'hidden':'visible';
   $('sort-hand').textContent=`Sort: ${sortMode}`;$('sort-hand').setAttribute('aria-label',`Sort hand by ${sortMode==='suit'?'rank':'suit'}`);
   $('incoming-zone').replaceChildren();
-  $('hand').replaceChildren(...hand.map(code=>{const card=playingCard(code,{interactive:true,selected:chosen.includes(code)});card.onclick=()=>{if(room.table?.kind==='thousand')handCard(code,{room,me,send:action=>command({type:'thousand',action}),run,repaint});else run(()=>command({type:'play',card:code}));};return card;}));
-  $('audit').disabled=false;$('audit').textContent='Download audit record';
+  const slotKey=`${room.id}:${room.table?.deal??0}:${sortMode}`;
+  if(slotKey!==handSlotKey||hand.some(code=>!handSlots.includes(code))){handSlotKey=slotKey;handSlots=[...hand,...Array(Math.max(0,10-hand.length)).fill(null)];}
+  $('hand').replaceChildren(...Array.from({length:10},(_,i)=>{const slot=element('div','','hand-slot'),code=handSlots[i];slot.dataset.slot=String(i);if(code&&hand.includes(code)){const card=playingCard(code,{interactive:true});card.onclick=()=>{if(room.table?.kind==='thousand')handCard(code,{room,me,send:action=>command({type:'thousand',action}),run,repaint});else run(()=>command({type:'play',card:code}));};slot.append(card);}else{const placeholder=element('span','','card-placeholder');placeholder.setAttribute('aria-hidden','true');slot.append(placeholder);}return slot;}));
+
   if(room.phase==='playing')for(const action of room.table?.actions??[]){if(action.input==='card')continue;$('game-actions').append(button(action.label,()=>command({type:action.type})));}
-  $('commitment').textContent=room.deck?`Shuffle ${room.deck.shuffleId}\nSHA-256 ${room.deck.commitment}`:'The deck hash will appear before dealing.';
   if(room.table?.kind==='thousand'){
     renderThousand({room,me,send:action=>command({type:'thousand',action}),refresh:refreshRoom,sendPlatform:action=>command(action),run,repaint,now:()=>Date.now()+serverOffset});
-    for(const card of $('hand').children){card.disabled=gifts.length>0||(!room.table.controls.recipients.length&&!room.table.controls.legalCards.includes(card.dataset.card));card.classList.toggle('is-unplayable',room.table.turn===me.id&&card.disabled);}
+    for(const card of $('hand').querySelectorAll('.card')){card.disabled=gifts.length>0||(!room.table.controls.recipients.length&&!room.table.controls.legalCards.includes(card.dataset.card));card.classList.toggle('is-unplayable',room.table.phase==='trick'&&room.table.turn===me.id&&card.disabled);card.classList.toggle('is-playable',room.table.controls.legalCards.includes(card.dataset.card)&&!card.disabled);}
     bindDistributionDrag({room,repaint});
-    $('commitment').textContent=room.deck?`Deal ${room.table.deal} · SHA-256 ${room.deck.commitment}`:'The dealer will publish the deck hash before dealing.';
+    if(room.table.phase==='finished'){const again=button('New table',lobby);const history=button('Played games',()=>archive.showArchive(),'secondary');$('game-actions').replaceChildren(again,history);}
   }else{
-    for(const card of $('hand').children)card.disabled=!(room.table?.actions??[]).some(a=>a.input==='card');
-    $('thousand-table').hidden=false;const center=element('div','','table-center');const logo=element('div','♠','bid-emblem');logo.style.cssText='font:45px Georgia;color:#d8c08d';center.append(logo,element('p',room.phase==='lobby'?`${room.players.length} friends at the table`:'The next hand awaits.','table-instruction'));$('thousand-table').append(center);
+    for(const card of $('hand').querySelectorAll('.card'))card.disabled=!(room.table?.actions??[]).some(a=>a.input==='card');
+    $('thousand-table').hidden=false;const center=element('div','','table-center');const logo=element('div','♠','bid-emblem');logo.style.cssText='font:45px Georgia;color:#d8c08d';center.append(logo,element('p',room.phase==='lobby'?`Players at table: ${room.players.length}`:'The next hand awaits.','table-instruction'));$('thousand-table').append(center);
   }
   layoutHand();layoutTrick();saveReceipt();
 }
@@ -102,19 +106,19 @@ function saveReceipt() {
   const receipts=JSON.parse(localStorage.getItem(key)||'[]');
   if(!receipts.some(r=>r.version===room.version)) receipts.push({roomId:room.id,version:room.version,eventHash:room.latestEventHash,deck:room.deck,observedAt:new Date().toISOString()});
   localStorage.setItem(key,JSON.stringify(receipts));
-  $('receipt').textContent=`${receipts.length} receipts saved in this browser.`;
 }
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>signedIn(await api('/auth',{name:new FormData(e.target).get('name')})));};
 $('create-form').onsubmit=e=>{e.preventDefault();run(async()=>{const data=new FormData(e.target),game=data.get('game');render(await api('/rooms',{game,...(game==='thousand'?{options:{playerCount:Number(data.get('playerCount')),barrelThreshold:Number(data.get('barrelThreshold'))},computerCount:Number(data.get('computerCount'))}:{})}));});};
 function configureComputers(){
   const seats=Number(document.querySelector('[name=playerCount]').value),select=$('computer-count');
   const count=Math.min(Number(select.value)||0,seats-1);
-  select.replaceChildren(...Array.from({length:seats},(_,i)=>{const option=element('option',i?`${i} computer${i===1?'':'s'} - ${seats-i===1?'solo':`${seats-i} people`}`:'No computers');option.value=String(i);return option;}));
-  select.value=String(count);const humans=seats-count;
+  select.replaceChildren(...Array.from({length:4},(_,i)=>{const option=element('option',i?`${i} computer${i===1?'':'s'} - ${i===3?'solo, 4 seats':seats-i===1?'solo':`${seats-i} people`}`:'No computers');option.value=String(i);return option;}));
+  select.value=String(count);for(const b of document.querySelectorAll('[data-seats]'))b.setAttribute('aria-pressed',String(Number(b.dataset.seats)===seats));const humans=seats-count;
   $('computer-note').textContent=humans===1?'Just you and the computers. Start whenever you are ready.':`Invite ${humans-1} friend${humans===2?'':'s'} to fill the table${count?' - computers take the remaining seats':''}.`;
 }
 document.querySelector('[name=playerCount]').onchange=configureComputers;
-$('computer-count').onchange=configureComputers;
+$('computer-count').onchange=()=>{const n=Number($('computer-count').value),seats=document.querySelector('[name=playerCount]');if(n>=Number(seats.value))seats.value=String(n+1);configureComputers();};
+for(const b of document.querySelectorAll('[data-seats]'))b.onclick=()=>{document.querySelector('[name=playerCount]').value=b.dataset.seats;configureComputers();};
 $('games').onchange=()=>{$('thousand-settings').hidden=$('games').value!=='thousand';configureComputers();};
 $('join-form').onsubmit=e=>{e.preventDefault();run(async()=>render(await api(`/rooms/${String(new FormData(e.target).get('code')).trim().toUpperCase()}/join`,{})));};
 $('back').onclick=lobby;
@@ -122,11 +126,15 @@ $('sort-hand').onclick=()=>{sortMode=sortMode==='suit'?'rank':'suit';localStorag
 $('copy-code').onclick=()=>run(async()=>{if(navigator.clipboard){await navigator.clipboard.writeText(room.code);notice('Table code copied. Send it to your friends.');}else notice(`Your table code is ${room.code}`);});
 window.addEventListener('resize',viewport);visualViewport?.addEventListener('resize',viewport);window.Telegram?.WebApp?.onEvent?.('viewportChanged',viewport);window.Telegram?.WebApp?.BackButton?.onClick?.(lobby);viewport();
 $('resume-table').onclick=()=>run(async()=>render(await api(`/rooms/${$('resume-table').dataset.code}`)));
-$('show-record').onclick=()=>$('record-dialog').showModal();
+installLanguages(()=>{repaint();archive.refreshLanguage();});
+$('marriage-options').onclick=()=>$('marriage-dialog').showModal();
+$('show-record').onclick=()=>run(()=>archive.showRecord(room.code));
+$('open-archive').onclick=()=>run(()=>archive.showArchive());
+function solo(seats){run(async()=>{if(pending)throw new Error('Return to your table and retry the previous move first.');$('games').value='thousand';document.querySelector('[name=playerCount]').value=String(seats);configureComputers();$('computer-count').value=String(seats-1);configureComputers();if(!$('create-form').reportValidity())return;render(await api('/rooms',{game:'thousand',options:{playerCount:seats,barrelThreshold:Number(document.querySelector('[name=barrelThreshold]').value)},computerCount:seats-1}));await command({type:'start'});await command(room.table.dealer===me.id?{type:'thousand',action:{type:'shuffle'}}:{type:'computerDeal'});});}
+$('solo-four').onclick=()=>solo(4);$('solo-three').onclick=()=>solo(3);
 for(const button of document.querySelectorAll('[data-close]'))button.onclick=()=>button.closest('dialog').close();
-$('audit').onclick=()=>run(async()=>{ const audit=await api(`/rooms/${room.code}/audit`); const receipts=JSON.parse(localStorage.getItem(`pastimer-receipts:${room.id}`)||'[]');const url=URL.createObjectURL(new Blob([JSON.stringify({...audit,receipts},null,2)],{type:'application/json'}));const a=element('a','');a.href=url;a.download=`pastimer-${room.code}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); });
 await run(async()=>{
-  const games=await api('/games'); $('games').replaceChildren(...games.map(g=>{const e=element('option',g.name);e.value=g.id;return e;})); $('games').value='thousand'; $('games').onchange();
+  const games=await api('/games'); $('games').replaceChildren(...games.map(g=>{const e=element('option',g.id==='thousand'?'Thousand':'High card · platform demo');e.value=g.id;return e;})); $('games').value='thousand'; $('games').onchange();
   try { signedIn(await api('/me')); } catch {
     const tg=window.Telegram?.WebApp;
     if(tg?.initData){tg.ready();tg.expand();tg.setHeaderColor?.('#101e28');tg.setBackgroundColor?.('#101e28');signedIn(await api('/auth',{initData:tg.initData}));}

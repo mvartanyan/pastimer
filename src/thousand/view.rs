@@ -49,6 +49,7 @@ pub struct SeatView {
     pub sticks: u32,
     pub on_barrel: bool,
     pub round_points: u16,
+    pub trick_points: u16,
     pub role: &'static str,
 }
 #[derive(Serialize)]
@@ -158,7 +159,7 @@ impl State {
             .map(|play| play.card.clone());
         View{kind:"thousand",phase:self.phase.name(),deal:self.deal,dealer:players.get(self.dealer).map(|p|p.id.clone()).unwrap_or_default(),contractor:self.contractor.and_then(|p|players.get(p)).map(|p|p.id.clone()),order:self.order,compulsory:self.compulsory,
             turn,hand:self.hands.get(viewer).cloned().unwrap_or_default(),stock:self.stock_visible.then(||self.stock.clone()),stock_taken:self.stock_taken,trump:self.trump,
-            seats:players.iter().enumerate().map(|(i,p)|SeatView{player:p.clone(),count:self.hands.get(&p.id).map_or(0,Vec::len),score:self.ledger.get(&p.id),sticks:self.sticks.get(&p.id).copied().unwrap_or(0),on_barrel:self.ledger.get(&p.id)==i64::from(self.settings.barrel_threshold),round_points:self.raw.get(&p.id).copied().unwrap_or(0),role:if players.len()==4&&i==self.dealer{"dealer"}else if self.contractor==Some(i){"contractor"}else{"player"}}).collect(),
+            seats:players.iter().enumerate().map(|(i,p)|SeatView{player:p.clone(),count:self.hands.get(&p.id).map_or(0,Vec::len),score:self.ledger.get(&p.id),sticks:self.sticks.get(&p.id).copied().unwrap_or(0),on_barrel:self.ledger.get(&p.id)==i64::from(self.settings.barrel_threshold),round_points:self.raw.get(&p.id).copied().unwrap_or(0),trick_points:self.tricks.iter().filter(|t|t.winner==p.id).map(|t|t.points).sum(),role:if players.len()==4&&i==self.dealer{"dealer"}else if self.contractor==Some(i){"contractor"}else{"player"}}).collect(),
             piles:players.iter().map(|p|PileView{player:p.id.clone(),count:self.tricks.iter().filter(|t|t.winner==p.id).count(),top:self.tricks.iter().rev().find(|t|t.winner==p.id).cloned()}).collect(),plays,close_at,trick_leader,trick_winner,announcing_card,server_now:now,controls,
             transfers:self.movements.iter().filter_map(|m|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to)&& (m.public||from==viewer||to==viewer){return Some(Transfer{player:to.clone(),card:m.card.clone(),public:m.public})}None}).collect(),
             deliveries:self.movements.iter().enumerate().filter_map(|(id,m)|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to){Some(Delivery{id,from:from.clone(),to:to.clone(),public:m.public,card:(m.public||from==viewer||to==viewer).then(||m.card.clone())})}else{None}}).collect(),

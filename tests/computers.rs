@@ -393,3 +393,38 @@ async fn active_table_recovers_without_browser_storage_and_backfills_older_rooms
     assert_eq!(e.store.recent(&identity.id).await?, Some(code));
     Ok(())
 }
+
+#[tokio::test]
+async fn card_turns_use_one_second_and_archive_inspection_never_advances_them() -> TestResult {
+    let (e, code) = setup(":memory:", 4, 1).await?;
+    for _ in 0..160 {
+        let before = e.read(&code, "human-0").await?;
+        if before["table"]["phase"] == "trick"
+            && let Some(due) = before["computerDueAt"].as_i64()
+        {
+            let saved = {
+                let mut conn = e.store.pool.acquire().await?;
+                serde_json::to_value(Engine::load(&mut conn, &code).await?)?
+            };
+            e.record(&code, "human-0").await?;
+            e.history("human-0", None).await?;
+            e.audit(&code, "human-0").await?;
+            let inspected = {
+                let mut conn = e.store.pool.acquire().await?;
+                serde_json::to_value(Engine::load(&mut conn, &code).await?)?
+            };
+            assert_eq!(saved, inspected);
+            e.advance_at(&code, "human-0", due).await?;
+            let after = e.read(&code, "human-0").await?;
+            if after["table"]["phase"] == "trick"
+                && let Some(next) = after["computerDueAt"].as_i64()
+            {
+                assert_eq!(next - due, 1000);
+                return Ok(());
+            }
+        } else {
+            step(&e, &code, 1).await?;
+        }
+    }
+    Err("No consecutive computer card turns found".into())
+}

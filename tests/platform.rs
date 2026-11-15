@@ -652,3 +652,63 @@ fn typed_decks_and_canonical_hash_vector() -> TestResult {
     assert_eq!(cards.len(), 52);
     Ok(())
 }
+
+#[tokio::test]
+async fn game_archive_is_member_scoped_and_keeps_times_scores_and_hashes() -> TestResult {
+    let engine = setup().await?;
+    let code = start(&engine).await?;
+    let playing = engine.history("a", None).await?;
+    assert_eq!(playing["games"].as_array().ok_or("games")?.len(), 1);
+    assert!(playing["games"][0]["startedAt"].is_string());
+    assert!(playing["games"][0]["endedAt"].is_null());
+    assert_eq!(engine.history("stranger", None).await?["games"], json!([]));
+    assert!(engine.record(&code, "stranger").await.is_err());
+    let before = engine.record(&code, "a").await?;
+    assert!(before["decks"][0].get("proof").is_none());
+    assert!(before["decks"][0]["commitment"].is_string());
+    acknowledge(&engine, &code).await?;
+    complete(&engine, &code).await?;
+    let record = engine.record(&code, "a").await?;
+    assert_eq!(record["game"]["phase"], "finished");
+    assert!(record["game"]["endedAt"].is_string());
+    assert_eq!(
+        record["game"]["players"].as_array().ok_or("players")?.len(),
+        2
+    );
+    assert!(record["decks"][0]["revealed"].as_bool().ok_or("revealed")?);
+    assert_eq!(
+        engine.history("b", None).await?["games"][0]["scores"],
+        record["game"]["scores"]
+    );
+    assert_eq!(engine.history("a", Some(0)).await?["games"], json!([]));
+    assert_eq!(
+        audit::verify(&engine.audit(&code, "a").await?)?["valid"],
+        true
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn game_archive_paginates_without_repeating_or_exposing_other_members() -> TestResult {
+    let engine = setup().await?;
+    for _ in 0..52 {
+        start(&engine).await?;
+    }
+    let first = engine.history("a", None).await?;
+    assert_eq!(first["games"].as_array().ok_or("games")?.len(), 50);
+    let cursor = first["nextBefore"].as_i64().ok_or("cursor")?;
+    let second = engine.history("a", Some(cursor)).await?;
+    assert_eq!(second["games"].as_array().ok_or("games")?.len(), 2);
+    assert!(second["nextBefore"].is_null());
+    for game in second["games"].as_array().ok_or("games")? {
+        assert!(
+            !first["games"]
+                .as_array()
+                .ok_or("games")?
+                .iter()
+                .any(|g| g["id"] == game["id"])
+        );
+    }
+    assert_eq!(engine.history("outsider", None).await?["games"], json!([]));
+    Ok(())
+}

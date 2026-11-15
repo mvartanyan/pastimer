@@ -37,7 +37,7 @@ try{
       const page=await context.newPage();pages.push(page);page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.getByRole('button',{name:'Create a table'}).waitFor();
       const me=await page.evaluate(async()=>await(await fetch('/api/me')).json());byId.set(me.id,page);
     }
-    const host=pages[0];await contexts[0].grantPermissions(['clipboard-read','clipboard-write'],{origin:base});await host.locator('[name=playerCount]').selectOption(String(count));await host.getByRole('button',{name:'Create a table'}).click();await host.locator('#room-code').waitFor({state:'visible'});const code=await host.locator('#room-code').textContent();
+    const host=pages[0];await contexts[0].grantPermissions(['clipboard-read','clipboard-write'],{origin:base});await host.getByRole('button',{name:`${count} seats`,exact:true}).click();await host.getByRole('button',{name:'Create a table'}).click();await host.locator('#room-code').waitFor({state:'visible'});const code=await host.locator('#room-code').textContent();
     for(const page of pages.slice(1)){await page.getByLabel('Table code').fill(code);await page.getByRole('button',{name:'Join table'}).click();await page.locator('#room').waitFor({state:'visible'});}
     await host.getByRole('button',{name:'Copy invitation code',exact:true}).click();assert.equal(await host.evaluate(()=>navigator.clipboard.readText()),code);
     const read=async page=>await page.evaluate(async code=>await(await fetch(`/api/rooms/${code}`)).json(),code);

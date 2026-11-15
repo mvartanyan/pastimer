@@ -72,6 +72,13 @@ impl Store {
         Ok(sqlx::query_scalar("SELECT code FROM rooms WHERE EXISTS (SELECT 1 FROM json_each(rooms.snapshot,'$.players') AS p WHERE json_extract(p.value,'$.id')=?) ORDER BY rowid DESC LIMIT 1")
             .bind(actor).fetch_optional(&self.pool).await?)
     }
+    pub async fn history(&self, actor: &str, before: i64) -> Result<Vec<(i64, Room)>> {
+        let rows = sqlx::query_as::<_, (i64, String)>("SELECT rowid,snapshot FROM rooms WHERE rowid<? AND json_extract(snapshot,'$.phase')<>'lobby' AND EXISTS (SELECT 1 FROM json_each(rooms.snapshot,'$.players') AS p WHERE json_extract(p.value,'$.id')=?) ORDER BY rowid DESC LIMIT 51")
+            .bind(before).bind(actor).fetch_all(&self.pool).await?;
+        rows.into_iter()
+            .map(|(id, raw)| Ok((id, serde_json::from_str(&raw)?)))
+            .collect()
+    }
     pub async fn session(&self, player: &Player) -> Result<String> {
         let secret = token();
         let now = chrono::Utc::now().timestamp_millis();

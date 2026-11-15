@@ -226,6 +226,8 @@ pub struct Room {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomView {
+    pub started_at: Option<String>,
+    pub ended_at: Option<String>,
     pub computer_due_at: Option<i64>,
     pub auction_calls: Vec<AuctionCall>,
     pub computers: Vec<String>,

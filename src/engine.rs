@@ -443,11 +443,31 @@ impl Engine {
         }
         Ok(())
     }
+    fn next_computer(room: &Room, now: i64) -> Option<(String, Action)> {
+        let Lifecycle::Playing(GameState::Thousand(state)) = &room.lifecycle else {
+            return None;
+        };
+        room.computers.iter().find_map(|id| {
+            crate::computer::choose(state.view(id, &room.players, now))
+                .map(|action| (id.clone(), Action::Thousand { action }))
+        })
+    }
     fn schedule_computer(room: &mut Room, now: i64, delay: i64) {
-        room.computer_due_at = crate::computer::next(room, now).map(|_| now + delay);
+        room.computer_due_at = Self::next_computer(room, now).map(|(_, action)| {
+            now + if matches!(
+                action,
+                Action::Thousand {
+                    action: crate::thousand::Action::Play { .. }
+                }
+            ) {
+                1000
+            } else {
+                delay
+            }
+        });
     }
     fn advance_computers(room: &mut Room, now: i64) -> Result<()> {
-        let Some((actor, action)) = crate::computer::next(room, now) else {
+        let Some((actor, action)) = Self::next_computer(room, now) else {
             room.computer_due_at = None;
             return Ok(());
         };
@@ -532,9 +552,55 @@ impl Engine {
         tx.commit().await?;
         Ok(view)
     }
-    pub async fn audit(&self, code: &str, actor: &str) -> Result<Value> {
-        self.advance_at(code, actor, Utc::now().timestamp_millis())
+    fn game_time(room: &Room, kind: &str) -> Option<String> {
+        room.events
+            .iter()
+            .find(|e| e.kind == kind)
+            .map(|e| e.at.clone())
+    }
+    fn summary(room: &Room) -> Value {
+        let started = Self::game_time(room, "game.started")
+            .or_else(|| room.events.first().map(|e| e.at.clone()));
+        let ended = Self::game_time(room, "game.finished").or_else(|| {
+            matches!(room.lifecycle, Lifecycle::Finished(_))
+                .then(|| room.events.last().map(|e| e.at.clone()))
+                .flatten()
+        });
+        json!({"id":room.id,"code":room.code,"game":room.game,"phase":room.lifecycle.phase(),"players":room.players,"scores":room.scores,"startedAt":started,"endedAt":ended})
+    }
+    pub async fn history(&self, actor: &str, before: Option<i64>) -> Result<Value> {
+        let mut rows = self
+            .store
+            .history(actor, before.unwrap_or(i64::MAX))
             .await?;
+        let more = rows.len() > 50;
+        rows.truncate(50);
+        let next = if more {
+            rows.last().map(|(id, _)| *id)
+        } else {
+            None
+        };
+        Ok(
+            json!({"games":rows.iter().map(|(_,r)|Self::summary(r)).collect::<Vec<_>>(),"nextBefore":next}),
+        )
+    }
+    pub async fn record(&self, code: &str, actor: &str) -> Result<Value> {
+        // Inspection is read-only: it must not advance old computer games.
+        let mut conn = self.store.pool.acquire().await?;
+        let room = Self::load(&mut conn, code).await?;
+        Self::member(&room, actor)?;
+        let completed = if let Some(GameState::Thousand(s)) = room.lifecycle.state() {
+            s.archives.len()
+        } else if matches!(room.lifecycle, Lifecycle::Finished(_)) {
+            room.decks.len()
+        } else {
+            0
+        };
+        Ok(
+            json!({"game":Self::summary(&room),"events":room.events,"decks":room.decks.iter().enumerate().map(|(i,d)|json!({"deal":i+1,"shuffleId":d.proof.shuffle_id,"commitment":d.commitment,"revealed":i<completed})).collect::<Vec<_>>()}),
+        )
+    }
+    pub async fn audit(&self, code: &str, actor: &str) -> Result<Value> {
         let mut conn = self.store.pool.acquire().await?;
         let room = Self::load(&mut conn, code).await?;
         Self::member(&room, actor)?;
@@ -622,6 +688,8 @@ impl Engine {
             })
             .collect();
         Ok(serde_json::to_value(RoomView {
+            started_at: Self::game_time(room, "game.started"),
+            ended_at: Self::game_time(room, "game.finished"),
             computer_due_at: room.computer_due_at,
             auction_calls,
             computers: room.computers.clone(),
@@ -647,7 +715,7 @@ impl Engine {
         Self::member(&room, actor)?;
         Self::compatible(&room)?;
         let due = matches!(room.lifecycle.state(),Some(GameState::Thousand(s))if s.due(now))
-            || (crate::computer::next(&room, now).is_some()
+            || (Self::next_computer(&room, now).is_some()
                 && room.computer_due_at.is_none_or(|at| now >= at));
         drop(conn);
         if !due {
