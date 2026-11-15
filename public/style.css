@@ -317,3 +317,24 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 #room[data-presentation=finished] .deal-summary{width:auto;height:auto;border-radius:30px}
 #room[data-presentation=finished] .result-score>small{display:none}
 @media(max-width:600px){.intro-deck{display:none}}
+
+/* Keep all seat outlines inside the rounded rail, without a crossing inner border. */
+#room .felt-line{display:none}
+#room .seat-left{left:12px;top:12px;width:calc(44% - 7px);max-width:183px}
+#room .seat-right{right:12px;top:12px;width:calc(44% - 7px);max-width:183px}
+#room[data-player-count="4"] .seat-left,#room[data-player-count="4"] .seat-right{top:12px}
+#room .seat-self{bottom:12px}
+#room .seat-score>.score-kind{width:20px;font-size:9px;line-height:12px;overflow-wrap:normal}
+#room .card-marriage{background:transparent;opacity:.72;filter:drop-shadow(0 1px 1px #0006)}
+#room .hand .card.announces-marriage{-webkit-touch-callout:none;user-select:none;touch-action:manipulation}
+#room .hand .card.is-forced{outline:2px solid #fff0bd;outline-offset:2px;animation:forced-card 2s ease-out both}
+@keyframes forced-card{from{box-shadow:0 0 0 5px #f4d99ca0}to{box-shadow:0 0 0 1px #f4d99c40}}
+#card-options-card{display:flex;justify-content:center;margin:20px 0}
+#card-options-card .playing-card{width:110px;height:auto}
+#play-without-marriage{width:100%}
+.archive-entry{display:flex;align-items:stretch;gap:8px;margin:8px 0}
+.archive-entry .archive-game{margin:0;flex:1;min-width:0}
+.archive-inspect{padding:10px;flex:none;font-size:12px}
+.archive-game .archive-action{color:var(--gold);font-weight:700;font-size:14px;margin-top:5px}
+@media(max-height:600px){#room .seat-left,#room .seat-right{width:calc(30% - 7px);max-width:calc(30% - 7px)}}
+@media(max-height:600px){#room .seat-self{width:calc(100% - 32px);max-width:calc(100% - 32px)}}

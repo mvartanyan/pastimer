@@ -1,4 +1,12 @@
 const catalog=`
+Resume game|Продолжить игру|Spiel fortsetzen|Continuar partida
+View record|Посмотреть запись|Protokoll ansehen|Ver registro
+Deal points: {n}; match score: {points}|За раздачу: {n}; счёт партии: {points}|Rundenpunkte: {n}; Spielstand: {points}|Puntos de la mano: {n}; partida: {points}
+Only legal card - playing in 2 seconds.|Единственная карта: ход через 2 секунды.|Einzige mögliche Karte: Zug in 2 Sekunden.|Única carta legal: se jugará en 2 segundos.
+Card options|Действия с картой|Kartenoptionen|Opciones de carta
+Close card options|Закрыть действия с картой|Kartenoptionen schließen|Cerrar opciones de carta
+Play without announcing|Сыграть без объявления|Ohne Ansage spielen|Jugar sin anunciar
+Tap to play; long-press or right-click for marriage options|Нажмите, чтобы сыграть; удерживайте или нажмите правой кнопкой для настроек марьяжа|Antippen zum Spielen; halten oder rechtsklicken für Hochzeitsoptionen|Toca para jugar; mantén pulsado o haz clic derecho para opciones de matrimonio
 Duplicate Telegram fields|Повторяющиеся поля Telegram|Doppelte Telegram-Felder|Campos de Telegram duplicados
 Invalid Telegram user|Неверные данные пользователя Telegram|Ungültiger Telegram-Benutzer|Usuario de Telegram no válido
 Telegram authentication is not configured|Вход через Telegram не настроен|Telegram-Anmeldung nicht eingerichtet|Acceso de Telegram sin configurar

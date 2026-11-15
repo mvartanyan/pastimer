@@ -2,7 +2,7 @@ import {playingCard,cardBack,cardName} from '/cards.js';
 const $=id=>document.getElementById(id);
 const node=(tag,text='',className='')=>{const e=document.createElement(tag);e.textContent=text;if(className)e.className=className;return e;};
 const symbols={H:'♥',D:'♦',C:'♣',S:'♠'};
-let timer,formKey='',draft={},current,openPile=null,drag=null,suppressClickUntil=0,ringsId=0,collectionAnimations=[];
+let timer,formKey='',draft={},current,openPile=null,drag=null,suppressClickUntil=0,ringsId=0,collectionAnimations=[],longPress=null,cardOption=null;
 const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'{}');}catch{return {};}};
 const deliveryKey=(room,me)=>`pastimer-deliveries:${me.id}:${room.id}:${room.table.deal}`;
 function prepare(room){const key=`${room.id}:${room.table.deal}:${room.table.phase}`;if(key!==formKey){formKey=key;draft={transfers:{},target:0,announce:{},announceVersion:room.version};}if(draft.announceVersion!==room.version){draft.announce={};draft.announceVersion=room.version;}}
@@ -14,7 +14,7 @@ export function incoming(room,me){
   return room.table.deliveries.filter(d=>d.to===me.id&&d.card&&room.table.hand.includes(d.card)&&saved[d.id]!==2).map(d=>({...d,stage:saved[d.id]??(d.public?1:0)}));
 }
 export function selectedTransfers(room){prepare(room);return Object.values(draft.transfers??{}).map(t=>t.card).filter(Boolean);}
-export function clearThousand(){for(const animation of collectionAnimations)animation.cancel();collectionAnimations=[];cancelDrag();clearTimeout(timer);$('thousand-table').hidden=true;}
+export function clearThousand(){for(const animation of collectionAnimations)animation.cancel();collectionAnimations=[];cancelDrag();cancelLongPress();clearTimeout(timer);$('thousand-table').hidden=true;}
 export function inspectTrick(room,player){
   const pile=room.table?.piles?.find(p=>p.player===player);if(!pile?.top)return;
   const dialog=$('inspector'),content=$('inspector-content');content.replaceChildren();
@@ -74,17 +74,28 @@ export function bindDistributionDrag({room,repaint}){
   }
 }
 export function handCard(code,{room,me,send,run,repaint}){
-  if(performance.now()<suppressClickUntil)return;
+  if(performance.now()<suppressClickUntil||document.querySelector('dialog[open]'))return;
   prepare(room);const t=room.table,c=t.controls;
   if(c.recipients.length){
     placeCard(room,code,(c.recipients[draft.target??0]??c.recipients[0]).id);
     repaint();return;
   }
-  if(c.legalCards.includes(code))run(()=>send({type:'play',card:code,announce:c.announceCards.includes(code)&&draft.announce[code.slice(-1)]!==false}));
+  if(c.legalCards.includes(code))return run(()=>send({type:'play',card:code,announce:c.announceCards.includes(code)&&draft.announce[code.slice(-1)]!==false}));
+}
+function cancelLongPress(){if(longPress)clearTimeout(longPress.timer);longPress=null;}
+function cardOptions(card,{room,me,send,run}){
+  cancelLongPress();suppressClickUntil=performance.now()+900;
+  if(card.disabled||!room.table.controls.announceCards.includes(card.dataset.card))return;
+  const dialog=$('card-options-dialog'),code=card.dataset.card;cardOption={room:room.id,version:room.version,card:code};
+  $('card-options-card').replaceChildren(playingCard(code));
+  $('play-without-marriage').onclick=()=>run(async()=>{
+    const view=current?.room;if(!view||view.id!==cardOption?.room||view.version!==cardOption.version||view.table.turn!==me.id||!view.table.controls.legalCards.includes(code)){dialog.close();return;}
+    await send({type:'play',card:code,announce:false});dialog.close();
+  });if(!dialog.open)dialog.showModal();
 }
 function marriageRings(extra=''){
   const rings=node('span','',`marriage-rings ${extra}`.trim()),id=`ring-metal-${++ringsId}`;rings.setAttribute('aria-hidden','true');
-  rings.innerHTML=`<svg viewBox="0 0 68 48" fill="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0bc"/><stop offset=".4" stop-color="#e9bb57"/><stop offset=".72" stop-color="#b37a20"/><stop offset="1" stop-color="#ffe6a0"/></linearGradient></defs><circle cx="24" cy="24" r="18" stroke="url(#${id})" stroke-width="4.5"/><path d="M62 24a18 18 0 1 1-36 0a18 18 0 1 1 36 0" stroke="#17332f" stroke-width="8"/><circle cx="44" cy="24" r="18" stroke="url(#${id})" stroke-width="4.5"/></svg>`;
+  rings.innerHTML=`<svg viewBox="0 0 68 48" fill="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0bc"/><stop offset=".4" stop-color="#e9bb57"/><stop offset=".72" stop-color="#b37a20"/><stop offset="1" stop-color="#ffe6a0"/></linearGradient><mask id="${id}-under" maskUnits="userSpaceOnUse" x="0" y="0" width="68" height="48"><rect width="68" height="48" fill="white"/><path d="M62 24a18 18 0 1 1-36 0a18 18 0 1 1 36 0" stroke="black" stroke-width="8" fill="none"/></mask></defs><circle cx="24" cy="24" r="18" stroke="url(#${id})" stroke-width="4.5" mask="url(#${id}-under)"/><circle cx="44" cy="24" r="18" stroke="url(#${id})" stroke-width="4.5"/></svg>`;
   return rings;
 }
 export function layoutTrick(){
@@ -114,6 +125,7 @@ export function layoutTrick(){
 }
 export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,now}){
   clearTimeout(timer);prepare(room);current={room,me,now};const t=room.table,c=t.controls;
+  if($('card-options-dialog').open&&(cardOption?.room!==room.id||cardOption.version!==room.version||t.turn!==me.id))$('card-options-dialog').close();
   if(openPile&&(openPile.room!==room.id||openPile.deal!==t.deal)){if($('inspector').open)$('inspector').close();openPile=null;}
   const name=id=>room.players.find(p=>p.id===id)?.name??id;
   const btn=(text,action,secondary=false)=>{const e=node('button',text,secondary?'secondary':'');e.type='button';e.onclick=()=>run(()=>send(action));return e;};
@@ -190,6 +202,15 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
   if(arrivals.length){$('phase').textContent='Your card.';for(const control of $('game-actions').querySelectorAll('button,input'))control.disabled=true;}
   $('marriage-options').disabled=!c.announceCards.length||!!arrivals.length;$('marriage-options').replaceChildren(marriageRings());$('marriage-choices').replaceChildren();
   for(const suit of [...new Set(c.announceCards.map(card=>card.slice(-1)))]){const toggle=node('button',`${symbols[suit]} ${ {H:'Hearts',D:'Diamonds',C:'Clubs',S:'Spades'}[suit]}`,'secondary marriage-toggle');toggle.setAttribute('aria-label',`Announce ${symbols[suit]} +${{H:100,D:80,C:60,S:40}[suit]}`);toggle.setAttribute('aria-pressed',String(draft.announce[suit]!==false));toggle.onclick=()=>{draft.announce[suit]=draft.announce[suit]===false;repaint();};$('marriage-choices').append(toggle);}
-  for(const card of $('hand').querySelectorAll('.card')){const announce=c.announceCards.includes(card.dataset.card)&&draft.announce[card.dataset.card.slice(-1)]!==false;card.classList.toggle('announces-marriage',announce);if(announce){card.setAttribute('aria-description','Announces the marriage and changes trump; long-press to play without announcing');card.oncontextmenu=e=>{e.preventDefault();draft.announce[card.dataset.card.slice(-1)]=draft.announce[card.dataset.card.slice(-1)]===false;repaint();};}else if(c.announceCards.includes(card.dataset.card)){card.oncontextmenu=e=>{e.preventDefault();draft.announce[card.dataset.card.slice(-1)]=true;repaint();};}}
+  for(const card of $('hand').querySelectorAll('.card')){
+    const eligible=c.announceCards.includes(card.dataset.card),announce=eligible&&draft.announce[card.dataset.card.slice(-1)]!==false;
+    card.classList.toggle('announces-marriage',announce);
+    if(!eligible)continue;
+    card.setAttribute('aria-description','Tap to play; long-press or right-click for marriage options');
+    const open=()=>cardOptions(card,{room,me,send,run});card.oncontextmenu=e=>{e.preventDefault();open();};
+    card.onpointerdown=e=>{if(e.button!==0||e.isPrimary===false)return;cancelLongPress();longPress={x:e.clientX,y:e.clientY,timer:setTimeout(open,550)};};
+    card.onpointermove=e=>{if(longPress&&Math.hypot(e.clientX-longPress.x,e.clientY-longPress.y)>10)cancelLongPress();};
+    card.onpointerup=card.onpointercancel=card.onlostpointercapture=cancelLongPress;
+  }
 
 }
