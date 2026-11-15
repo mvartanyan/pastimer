@@ -16,6 +16,7 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | Empty hand retains the same field and ten pale slots (UI fixture, November 15) | [08-empty-hand.png](08-empty-hand.png) |
 | Finished-match laurel and next actions (UI fixture, November 15) | [09-victory.png](09-victory.png) |
 | Russian lobby and direct solo buttons (full-page UI fixture, November 15) | [10-lobby-ru.png](10-lobby-ru.png) |
+| Transparent marriage rings and inset hand-info borders (UI fixture, November 15) | [11-transparent-marriage.png](11-transparent-marriage.png) |
 
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 

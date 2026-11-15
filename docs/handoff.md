@@ -6,11 +6,15 @@ Updated 2026-11-15. Repository: `mvartanyan/pastimer`. Local Horse continuation:
 
 The Rust multiplayer platform, the owner's complete Thousand rules, audit verifier and redesigned card-table UI are implemented. **Pastimer is deployed and verified on Horse at https://1000.vartanyan.com**, using the established local `/Users/michael/dev/k3s-horse` setup. [@pastimerbot](https://t.me/pastimerbot) has a verified default `Play / Играть` menu button pointing to that origin.
 
-The current release source is `7534a259b64c2b5623a81b716fb761ae68b2cf26`. It adds stable table/hand/action areas with ten persistent pale slots, captured-card point scores during a deal, barrel icons, fixed marriage options, stronger playable-card contrast and one-second computer card plays. Auction calls and completed-trick closure keep their three-second timing. The lobby has direct solo buttons for two or three computers and larger seat controls. The persistent language switch provides English, Russian, German and Spanish; the three rejected promotional lines are removed.
+The current release source is `99a8723a27b44fd36a36b8cdbf7c3847e742dd14`. In-progress archive entries now resume play directly, with Record separate; resuming also remembers the selected older table for server-side reconnect. A sole legal human card is played automatically after two seconds through the normal durable command path. The timer survives local repaints, revalidates the live view, and pauses for inspection or incoming-card handling. It cancels when leaving/changing the table or while hidden/pending a command.
 
-Finished matches have a laurel winner display, New table and Played games actions. The private archive lists players, scores, start/end times and offers searchable public events, deck hashes and audit downloads. Archive/history/audit reads do not advance unattended games. Existing event timestamps provide history without schema or snapshot migrations. Bots now bid from a guaranteed floor plus likely tricks and an attainable marriage, and recalculate the final order after stock distribution. Their policy accepts only the seat's typed view; unseen-hand redistribution tests leave the view and choice unchanged. See [the current Horse release record](horse-playability-2026-11-15.md) for identity, backups and verification; [the previous record](horse-table-cues-2026-11-14.md) retains the prior release.
+Seat scores now show the full current-deal total, including marriages, in one sum. Player panes sit inside the table rail without the crossing inner decorative border. Announcing-card rings have a transparent background and reduced opacity, with a mask for ring crossings. Long-press (550 ms) or right-click an eligible court to open Card options, then choose Play without announcing. Normal taps retain the default announcement, and the fixed ring options remain available. Stable hand slots, transfer behavior, one-second computer card plays, three-second auction/trick timing, four languages and all prior recovery/audit boundaries remain.
+
+See [the current Horse release record](horse-resume-2026-11-15.md) for identity, backups and verification. [The preceding archive/language release](horse-playability-2026-11-15.md) records the original archive, languages, solo buttons, winner laurels and stronger computer bidding. Computer strategy still receives only its own typed view and public information. Archive/history/audit reads remain member-authorized and read-only; only an explicit resume updates the reconnect target.
 
 Relevant implementation commits:
+
+- `99a8723` - direct archive resume, two-second forced human cards, explicit marriage gestures, full deal totals and inset player panes.
 
 - `7534a25` - clear translated mobile lobby headings; four-language lobby regression.
 - `9851b8c` - stable playing field, captured points/barrel icons, game archive, winner celebration, solo shortcuts, four languages, stronger legal-card contrast and faster/more willing computer play.
@@ -261,3 +265,11 @@ All 46 Rust tests, formatting and strict Clippy pass. The complete browser suite
 Keep the original untracked root `thousand-rules.ru.md` untouched. The canonical agreed rules remain the two files under `docs/`.
 
 After the final pod replacement, fresh Telegram authentication with empty browser storage restored all three original historical memberships and the exact audit. The initial cookies had crossed their 24-hour expiry; this was verified separately from room persistence.
+
+## Resume and forced-play continuation
+
+The focused browser suite uses real room creation, history, resume and reconnect, followed by clearly labelled UI fixtures with a controlled clock. It verifies exactly one automatic command at two seconds, a deadline preserved through sorting, no selection among multiple legal cards, stale-choice cancellation, inspection/lobby/receipt pauses, and right-click/550-ms hold without a release-click play. Controlled fixtures wait for the preceding command's acknowledgement before reload; a pending durable command correctly blocks automatic play.
+
+Seven viewport fixtures verify player-border insets, transparent marriage rings and one combined 125-point value for 25 trick points plus a 100-point marriage. All existing human/computer game suites and 46 Rust tests pass. The new release record separates live rules-engine deals from controlled UI fixtures.
+
+Live acceptance completed three deals across three/four seats, including three automatically played human cards in each active-human scenario. The deployed verifier accepts all proofs. The four-seat second deal, exact audit, fresh Telegram recovery and Record -> Resume game also pass.
