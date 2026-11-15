@@ -1,14 +1,19 @@
 # Local-session handoff
 
-Updated 2026-11-14. Repository: `mvartanyan/pastimer`. Local Horse continuation: branch `codex/horse-deployment`; pulled `main` at `6376528`.
+Updated 2026-11-15. Repository: `mvartanyan/pastimer`. Local Horse continuation: branch `codex/horse-deployment`; pulled `main` at `6376528`.
 
 ## Where the work stands
 
 The Rust multiplayer platform, the owner's complete Thousand rules, audit verifier and redesigned card-table UI are implemented. **Pastimer is deployed and verified on Horse at https://1000.vartanyan.com**, using the established local `/Users/michael/dev/k3s-horse` setup. [@pastimerbot](https://t.me/pastimerbot) has a verified default `Play / Играть` menu button pointing to that origin.
 
-The running application source is `f54714d388be37749979e8fe206a323c73d7de9e`. The table now has one centred top-view trump symbol, large rings on announcing cards, owner-anchored played cards, a persistent leader cue and animated collection to the winning hand. Contract information appears only at its owner's seat. Transfers now drag to player hands and turn on tap; eligible marriages default on, and the current trump uses crossed gold rings plus its suit. Incoming cards now use a highlight without sender/tap labels, and reopening a deal no longer replays stale receipts or miscounts the hand. The current gameplay update includes paced auction calls, stronger computer seats, one-screen play, readable cards, hand-selected transfers and table recovery after reopening. The owner confirmed actual Telegram launch, identity and table creation. Live browser checks also completed solo/two-human computer games and verified their proofs with the deployed audit binary. Original sessions, completed room and exact audit survived both pod replacement and this upgrade. See [the current Horse release record](horse-table-cues-2026-11-14.md) for image digests, backups and checks; [the initial record](horse-2026-11-14.md) retains the first deployment history.
+The current release source is `7534a259b64c2b5623a81b716fb761ae68b2cf26`. It adds stable table/hand/action areas with ten persistent pale slots, captured-card point scores during a deal, barrel icons, fixed marriage options, stronger playable-card contrast and one-second computer card plays. Auction calls and completed-trick closure keep their three-second timing. The lobby has direct solo buttons for two or three computers and larger seat controls. The persistent language switch provides English, Russian, German and Spanish; the three rejected promotional lines are removed.
+
+Finished matches have a laurel winner display, New table and Played games actions. The private archive lists players, scores, start/end times and offers searchable public events, deck hashes and audit downloads. Archive/history/audit reads do not advance unattended games. Existing event timestamps provide history without schema or snapshot migrations. Bots now bid from a guaranteed floor plus likely tricks and an attainable marriage, and recalculate the final order after stock distribution. Their policy accepts only the seat's typed view; unseen-hand redistribution tests leave the view and choice unchanged. See [the current Horse release record](horse-playability-2026-11-15.md) for identity, backups and verification; [the previous record](horse-table-cues-2026-11-14.md) retains the prior release.
 
 Relevant implementation commits:
+
+- `7534a25` - clear translated mobile lobby headings; four-language lobby regression.
+- `9851b8c` - stable playing field, captured points/barrel icons, game archive, winner celebration, solo shortcuts, four languages, stronger legal-card contrast and faster/more willing computer play.
 
 - `e6c4e87` — Rust platform, Thousand rules, tests and audit verification.
 - `5dbc456` — container/k3s preparation, deployment instructions and screenshot capture helper.
@@ -58,6 +63,7 @@ The full specification is [English](thousand-rules.md) and [Russian](thousand-ru
 | Offline verification CLI | `src/bin/verify-audit.rs` |
 | Telegram signed identity validation | `src/telegram.rs` |
 | Shared lobby/session/room/hand UI | `public/app.js`, `public/index.html`, `public/style.css` |
+| Language catalog and private game archive | `public/i18n.js`, `public/archive.js`, `src/engine.rs`, `src/store.rs` |
 | Card SVG artwork, sorting and hand layout | `public/cards.js` |
 | Auction, transfers, play, deadlines and trick-pile UI | `public/thousand.js` |
 | Rules tests | `src/thousand/tests.rs` |
@@ -111,7 +117,7 @@ npm run test:browser
 
 The Rust suite has 30 tests covering complete deals/matches, the attainable 380-point maximum, barrel behavior, sticks, privacy, rollback, four nines, per-player trick piles, restart recovery, rule replay, proof tampering, command races, retry idempotency, Telegram signatures and legacy compatibility. Browser checks cover the demo, full three-player Thousand play with real three-second closure, four-player here bidding/mixed-visibility distribution/dismissal, audit verification, reload/retry, card rendering, sorting, clipboard copying, mobile overflow and card selection during an in-flight refresh.
 
-Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; the owner has since confirmed actual Telegram launch, identity and table creation. See [the current release record](horse-table-cues-2026-11-14.md) for the computer follow-up and live browser checks.
+Release builds and the four signed-identity screenshot flows also passed during the UI work. A container build/runtime check was completed before `ba4ac97`; **rebuild the image from the latest checkout** for deployment so it contains the redesigned assets. The subsequent local continuation verified native local-platform checks, public HTTPS and Horse runtime behavior; the owner has since confirmed actual Telegram launch, identity and table creation. See [the November 14 release record](horse-table-cues-2026-11-14.md) for the computer follow-up and live browser checks.
 
 To verify a downloaded audit independently:
 
@@ -119,7 +125,7 @@ To verify a downloaded audit independently:
 cargo run --locked --bin verify-audit -- path/to/pastimer-XXXXXXXX.json
 ```
 
-## Horse continuation completed locally
+## Initial Horse continuation - November 14 history
 
 The local continuation pulled `main`, preserved the pre-existing untracked root `thousand-rules.ru.md`, and read the local k3s project, SSH configuration and live cluster. Horse is a single amd64 node using its existing Traefik ingress, `letsencrypt-prod` issuer and `local-path` storage. The owner chose `1000.vartanyan.com` and supplied the bot token in an ignored local `.env`, now mode 0600. Credentials were installed as Secret `pastimer-telegram`, key `bot-token`, without being printed or committed.
 
@@ -162,9 +168,9 @@ All 33 Rust tests, formatting, strict Clippy and the complete browser suites pas
 
 That release image manifest digest was `sha256:6c7f197a66f61470cd765ce9d1947fec7798867914e45a26881076a4424c5f9d`; its runtime image/config ID was `sha256:5df88912a5b95046d075998f2f85a8e912b236637a6bc68eec5b673e7f43902f`. Pod `pastimer-844c4f7458-j74cr` was Ready with zero restarts on the same PVC. The new pre-upgrade backup passed SQLite integrity checking. Native build archives and previous images are retained, the temporary builder is stopped, and Colima was not started for this follow-up.
 
-Reopen the Mini App to load the new assets, then create a computer table to test alone. A manual real-client computer-game playthrough is distinct from the passing signed synthetic browser flows. A Main Mini App/profile launch button remains optional; the default menu button is configured. Scheduled/off-host backups are not established by this setup. See [the current release record](horse-table-cues-2026-11-14.md).
+Reopen the Mini App to load the new assets, then create a computer table to test alone. A manual real-client computer-game playthrough is distinct from the passing signed synthetic browser flows. A Main Mini App/profile launch button remains optional; the default menu button is configured. Scheduled/off-host backups are not established by this setup. See [the November 14 release record](horse-table-cues-2026-11-14.md).
 
-## Gameplay follow-up
+## Gameplay follow-up - November 14 history
 
 Source `5517348` replaces the earlier pass-only/burst computer policy with
 conservative guaranteed-point bidding, useful distribution, ace/winner leads
@@ -185,7 +191,7 @@ controls/cards fit seven portrait/landscape sizes from 320x480 to 1024x768.
 Reviewed screenshots are updated. See the [current release record](horse-table-cues-2026-11-14.md)
 for live verification and deployment identity.
 
-## Receipt/count follow-up
+## Receipt/count follow-up - November 14 history
 
 The owner requested no sender or tap instructions on incoming cards. The card
 itself now glows, the hand dims, sorting hides and other gameplay controls stay
@@ -201,13 +207,13 @@ after four plays. A stale played gift explains the displayed five. Source
 before the recipient's first play. A failing-before/passing-after regression
 reopens a five-card hand with empty browser storage. The complete browser suite
 passes, including the new receipt UI/count checks at three and four seats.
-See [the current release record](horse-table-cues-2026-11-14.md) for live proof.
+See [the November 14 release record](horse-table-cues-2026-11-14.md) for live proof.
 
 The final image also constrains transfer buttons when recipient names are long,
 including narrow landscape. Browser checks now use long player names and wait
 for controls to become actionable before recording command versions.
 
-## Transfers and marriage default
+## Transfers and marriage default - November 14 history
 
 Drag distribution cards onto the recipient seat/hand with mouse or touch. Tap a
 staged card to turn face up for open transfer or face down for secret transfer;
@@ -228,7 +234,7 @@ human games with default marriage leads pass. Mouse/touch/cancel/invalid-drop,
 drag-back, face toggling, no lower panel, privacy, retries, audits and seven
 viewport geometries are covered. See the current release record for live proof.
 
-## Table clarity and trick collection
+## Table clarity and trick collection - November 14 history
 
 Remove the central contract/name and preparation contract text. Contract order
 is shown at the owner's seat, including barrel/next-dealer cases. Marriage rings
@@ -247,3 +253,11 @@ checks verify round equal rings, no card/seat/trump overlap across seven sizes,
 collection endpoints and reduced motion. The real four-player view is tested
 with the dealer sitting out. See the current release record for image identity,
 live verification and persistence proof.
+
+## November 15 continuation
+
+All 46 Rust tests, formatting and strict Clippy pass. The complete browser suite covers demo, three/four-human deals, one/two-human computer games and solo play against three computers, with verified audits. Controlled fixtures check seven viewport sizes, unchanged field geometry with 7/1/0 cards, barrel/captured-point rendering, default/optional marriages, winner laurels, stronger disabled-card dimming, all four languages and persistence across reload. Translated mobile lobby headings are visually reviewed without overlapping decoration. The full Horse evidence is in the linked November 15 release record.
+
+Keep the original untracked root `thousand-rules.ru.md` untouched. The canonical agreed rules remain the two files under `docs/`.
+
+After the final pod replacement, fresh Telegram authentication with empty browser storage restored all three original historical memberships and the exact audit. The initial cookies had crossed their 24-hour expiry; this was verified separately from room persistence.

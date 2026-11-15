@@ -15,6 +15,7 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | Cards by owner, leader and trick winner highlighted (UI fixture) | [07-trick-owners.png](07-trick-owners.png) |
 | Empty hand retains the same field and ten pale slots (UI fixture, November 15) | [08-empty-hand.png](08-empty-hand.png) |
 | Finished-match laurel and next actions (UI fixture, November 15) | [09-victory.png](09-victory.png) |
+| Russian lobby and direct solo buttons (full-page UI fixture, November 15) | [10-lobby-ru.png](10-lobby-ru.png) |
 
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 
