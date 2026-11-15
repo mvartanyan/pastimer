@@ -22,7 +22,7 @@ Tests should cover complete matches, illegal/out-of-turn actions, score boundari
 
 ## Computer seats
 
-Room creation accepts a platform-level `computerCount` for Thousand, separate from its rules settings. The stored room has a default-empty `computers` roster of seat IDs, preserving old snapshots. Public views disclose those IDs and normal player projections, never the other hands. Computer identities cannot be obtained through the Telegram or local-development login paths.
+Room creation accepts a platform-level `computerCount` for Thousand and both Durak variants, separate from their rules settings. The stored room has a default-empty `computers` roster of seat IDs, preserving old snapshots. Public views disclose those IDs and normal player projections, never the other hands. Computer identities cannot be obtained through the Telegram or local-development login paths.
 
 `src/computer.rs` accepts only a single seat's typed public view. The engine owns projection from the full room. Bidding retains a guaranteed floor and adds a modest likely-trick estimate with one attainable protected marriage; final orders are recalculated after distribution. Distribution searches the 45 possible discard pairs to preserve that plan. Play cashes guaranteed winners before announcing trump and takes a winnable trick when possible. It never examines another hand; public played cards are explicit view data.
 
@@ -33,3 +33,13 @@ The engine dispatches human and computer actions through the same validator and 
 Deal boundaries require human input even for a computer dealer. The `computerDeal` platform command records the requesting human and applies the actual shuffle as the computer dealer; normal rule replay verifies the shuffle. Audit replay also validates the request's human actor and computer dealer. This keeps settled scores and trick piles available until the next deal is requested.
 
 History and record/audit endpoints load member-authorized snapshots without materializing turn deadlines. Archive inspection must never resume an unattended computer table. Start/end times are derived from existing public events, retaining compatibility without snapshot migrations.
+
+## Durak integration
+
+`src/durak/` provides one deterministic state machine with a typed Podkidnoy/Perevodnoy variant. Durak room settings use a separate `durakOptions` snapshot field, leaving existing Thousand and legacy snapshots compatible; public room views and HTTP creation expose the applicable settings as `options`. All Durak moves use the `durak` command envelope and the common version/idempotency transaction path. Game IDs are `durak-podkidnoy` and `durak-perevodnoy`.
+
+A defender may act while the attacker has throw-in priority. Helpers submit player/rank requests; only the current attacker may approve them. A new defence rank restores attacker priority but never inherits an earlier rank's approval. Transfers change the current attacker and clear requests/approvals, while replenishment retains the original attacker. The host may rematch a settled game using the same room; subsequent decks and commands remain sealed until that game settles.
+
+`pastimer-durak-audit-v1` records every settled game's card movements, completed attacks and final hands. `src/durak/verify.rs` validates the event chain and commitments, reconstructs initial hands from the revealed deck and replays actions and emitted public events. The public typed view omits other hands, stock order and private movements. Computer policy receives only that view.
+
+`public/durak.js` uses a variable-size two-row card grid with horizontal scrolling, without Thousand's ten fixed placeholders. Shared frontend changes must preserve both layouts and durable command recovery. `tests/durak-browser.mjs` covers real multiplayer games and controlled large-hand/request views as part of `npm run test:browser`.

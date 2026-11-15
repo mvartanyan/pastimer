@@ -8,6 +8,9 @@ fn check(condition: bool, message: &str) -> Result<()> {
     ensure(condition, Error::bad(message))
 }
 pub fn verify(audit: &Value) -> Result<Value> {
+    if audit["protocol"] == "pastimer-durak-audit-v1" {
+        return crate::durak::verify::audit(audit);
+    }
     if audit["protocol"] == "pastimer-audit-v2" {
         return verify_thousand(audit);
     }

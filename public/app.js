@@ -1,3 +1,4 @@
+import {renderDurak,durakSeats,deferDurakRender} from '/durak.js';
 import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick,bindDistributionDrag,layoutTrick} from '/thousand.js';
 import {installLanguages} from '/i18n.js';
 import {installArchive} from '/archive.js';
@@ -47,6 +48,7 @@ async function command(action) {
   }
 }
 function renderSeats(){
+  if(room.game.startsWith('durak-')){$('seats').replaceChildren(...durakSeats(room,me));return;}
   const own=room.players.findIndex(p=>p.id===me.id),others=Array.from({length:room.players.length-1},(_,i)=>room.players[(own+i+1)%room.players.length]);
   const inactive=room.players.length===4?(room.table?.phase==='awaitShuffle'&&room.table.lastDeal?room.table.lastDeal.dealer:room.table?.dealer):null;
   const activeOthers=others.filter(p=>p.id!==inactive);
@@ -65,13 +67,18 @@ function renderSeats(){
   }));
 }
 function render(next) {
+  if(room?.code===next.code && next.game.startsWith('durak-') && deferDurakRender(next,render))return;
   if(room?.code===next.code && next.version<room.version)next=room;
-  if(next!==room&&next.table)serverOffset=next.table.serverNow-Date.now();
+  if(next!==room&&next.table?.serverNow)serverOffset=next.table.serverNow-Date.now();
   room=next;document.body.classList.add('in-room');
+  if(room.game.startsWith('durak-'))$('room').dataset.presentation=room.table?.phase??room.phase;
   $('room').dataset.phase=room.table?.phase??room.phase;$('room').dataset.version=String(room.version);$('room').dataset.game=room.game;
   document.querySelector('.intro').hidden=true;rememberRoom(room.code);$('resume-table').hidden=true;try{window.Telegram?.WebApp?.enableClosingConfirmation?.();window.Telegram?.WebApp?.BackButton?.show?.();}catch{}$('room').dataset.playerCount=String(room.players.length);$('lobby').hidden=true;$('lobby-tools').hidden=true;$('room').hidden=false;
   const dealer=room.table?.seats?.find(s=>s.id===room.table.dealer);$('game-title').textContent=dealer?`Dealer: ${dealer.name}`:'PRIVATE TABLE';$('game-title').title=$('game-title').textContent;$('room-code').textContent=room.code;
   $('deal-badge').textContent=room.table?.deal?`DEAL ${String(room.table.deal).padStart(2,'0')}`:`${room.players.length} / ${room.options?.playerCount??4} SEATS`;
+  $('marriage-options').hidden=room.game.startsWith('durak-');$('hand').classList.toggle('durak-hand',room.game.startsWith('durak-'));
+  if(!room.game.startsWith('durak-'))$('hand').onpointerdown=null;
+  $('thousand-table').classList.remove('durak-table');
   renderSeats();clearThousand();$('table-actions').replaceChildren();$('game-actions').replaceChildren();$('thousand-table').replaceChildren();
   $('phase').textContent={lobby:'Invite your friends. Share the table code.',committing:'The deck is committed. Confirm to start the demo.',playing:`Round ${room.table?.round??''} · choose your card.`,finished:'Game complete. The record is ready to verify.'}[room.phase];
   if(pending&&pending.code===room.code)$('table-actions').append(button('Retry previous move',()=>command(pending.action),'secondary'));
@@ -86,7 +93,7 @@ function render(next) {
   $('incoming-zone').replaceChildren();
   const slotKey=`${room.id}:${room.table?.deal??0}:${sortMode}`;
   if(slotKey!==handSlotKey||hand.some(code=>!handSlots.includes(code))){handSlotKey=slotKey;handSlots=[...hand,...Array(Math.max(0,10-hand.length)).fill(null)];}
-  $('hand').replaceChildren(...Array.from({length:10},(_,i)=>{const slot=element('div','','hand-slot'),code=handSlots[i];slot.dataset.slot=String(i);if(code&&hand.includes(code)){const card=playingCard(code,{interactive:true});card.onclick=()=>{if(room.table?.kind==='thousand')handCard(code,{room,me,send:action=>command({type:'thousand',action}),run,repaint});else run(()=>command({type:'play',card:code}));};slot.append(card);}else{const placeholder=element('span','','card-placeholder');placeholder.setAttribute('aria-hidden','true');slot.append(placeholder);}return slot;}));
+  if(room.table?.kind!=='durak')$('hand').replaceChildren(...Array.from({length:10},(_,i)=>{const slot=element('div','','hand-slot'),code=handSlots[i];slot.dataset.slot=String(i);if(code&&hand.includes(code)){const card=playingCard(code,{interactive:true});card.onclick=()=>{if(room.table?.kind==='thousand')handCard(code,{room,me,send:action=>command({type:'thousand',action}),run,repaint});else run(()=>command({type:'play',card:code}));};slot.append(card);}else{const placeholder=element('span','','card-placeholder');placeholder.setAttribute('aria-hidden','true');slot.append(placeholder);}return slot;}));
 
   if(room.phase==='playing')for(const action of room.table?.actions??[]){if(action.input==='card')continue;$('game-actions').append(button(action.label,()=>command({type:action.type})));}
   if(room.table?.kind==='thousand'){
@@ -94,6 +101,8 @@ function render(next) {
     for(const card of $('hand').querySelectorAll('.card')){card.disabled=gifts.length>0||(!room.table.controls.recipients.length&&!room.table.controls.legalCards.includes(card.dataset.card));card.classList.toggle('is-unplayable',room.table.phase==='trick'&&room.table.turn===me.id&&card.disabled);card.classList.toggle('is-playable',room.table.controls.legalCards.includes(card.dataset.card)&&!card.disabled);}
     bindDistributionDrag({room,repaint});
     if(room.table.phase==='finished'){const again=button('New table',lobby);const history=button('Played games',()=>archive.showArchive(),'secondary');$('game-actions').replaceChildren(again,history);}
+  }else if(room.table?.kind==='durak'){
+    renderDurak({room,me,send:action=>command({type:'durak',action}),run,repaint,sortMode,sortedHand});
   }else{
     for(const card of $('hand').querySelectorAll('.card'))card.disabled=!(room.table?.actions??[]).some(a=>a.input==='card');
     $('thousand-table').hidden=false;const center=element('div','','table-center');const logo=element('div','♠','bid-emblem');logo.style.cssText='font:45px Georgia;color:#d8c08d';center.append(logo,element('p',room.phase==='lobby'?`Players at table: ${room.players.length}`:'The next hand awaits.','table-instruction'));$('thousand-table').append(center);
@@ -124,7 +133,7 @@ function saveReceipt() {
   localStorage.setItem(key,JSON.stringify(receipts));
 }
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>signedIn(await api('/auth',{name:new FormData(e.target).get('name')})));};
-$('create-form').onsubmit=e=>{e.preventDefault();run(async()=>{const data=new FormData(e.target),game=data.get('game');render(await api('/rooms',{game,...(game==='thousand'?{options:{playerCount:Number(data.get('playerCount')),barrelThreshold:Number(data.get('barrelThreshold'))},computerCount:Number(data.get('computerCount'))}:{})}));});};
+$('create-form').onsubmit=e=>{e.preventDefault();run(async()=>{const data=new FormData(e.target),game=data.get('game');render(await api('/rooms',{game,...(game==='thousand'?{options:{playerCount:Number(data.get('playerCount')),barrelThreshold:Number(data.get('barrelThreshold'))},computerCount:Number(data.get('computerCount'))}:game.startsWith('durak-')?{options:{playerCount:Number(data.get('durakPlayerCount'))},computerCount:Number(data.get('durakComputerCount'))}:{})}));});};
 function configureComputers(){
   const seats=Number(document.querySelector('[name=playerCount]').value),select=$('computer-count');
   const count=Math.min(Number(select.value)||0,seats-1);
@@ -135,7 +144,9 @@ function configureComputers(){
 document.querySelector('[name=playerCount]').onchange=configureComputers;
 $('computer-count').onchange=()=>{const n=Number($('computer-count').value),seats=document.querySelector('[name=playerCount]');if(n>=Number(seats.value))seats.value=String(n+1);configureComputers();};
 for(const b of document.querySelectorAll('[data-seats]'))b.onclick=()=>{document.querySelector('[name=playerCount]').value=b.dataset.seats;configureComputers();};
-$('games').onchange=()=>{$('thousand-settings').hidden=$('games').value!=='thousand';configureComputers();};
+$('games').onchange=()=>{$('thousand-settings').hidden=$('games').value!=='thousand';$('durak-settings').hidden=!$('games').value.startsWith('durak-');document.querySelector('[name=barrelThreshold]').disabled=$('games').value!=='thousand';configureComputers();configureDurak();};
+function configureDurak(){const seats=Number($('durak-seats').value),select=$('durak-computers'),count=Math.min(Number(select.value)||0,seats-1);select.replaceChildren(...Array.from({length:seats},(_,i)=>{const option=element('option',i?(i===1?'1 computer':`${i} computers`):'No computers');option.value=String(i);return option;}));select.value=String(count);}
+$('durak-seats').onchange=configureDurak;
 $('join-form').onsubmit=e=>{e.preventDefault();run(async()=>render(await api(`/rooms/${String(new FormData(e.target).get('code')).trim().toUpperCase()}/join`,{})));};
 $('back').onclick=lobby;
 $('sort-hand').onclick=()=>{sortMode=sortMode==='suit'?'rank':'suit';localStorage.setItem('pastimer-hand-sort',sortMode);if(room)render(room);};
@@ -152,7 +163,7 @@ function solo(seats){run(async()=>{if(pending)throw new Error('Return to your ta
 $('solo-four').onclick=()=>solo(4);$('solo-three').onclick=()=>solo(3);
 for(const button of document.querySelectorAll('[data-close]'))button.onclick=()=>button.closest('dialog').close();
 await run(async()=>{
-  const games=await api('/games'); $('games').replaceChildren(...games.map(g=>{const e=element('option',g.id==='thousand'?'Thousand':'High card · platform demo');e.value=g.id;return e;})); $('games').value='thousand'; $('games').onchange();
+  const games=await api('/games'); $('games').replaceChildren(...games.map(g=>{const e=element('option',g.id==='thousand'?'Thousand':g.id==='durak-podkidnoy'?'Podkidnoy Durak':g.id==='durak-perevodnoy'?'Perevodnoy Durak':'High card · platform demo');e.value=g.id;return e;})); $('games').value='thousand'; $('games').onchange();
   try { signedIn(await api('/me')); } catch {
     const tg=window.Telegram?.WebApp;
     if(tg?.initData){tg.ready();tg.expand();tg.setHeaderColor?.('#101e28');tg.setBackgroundColor?.('#101e28');signedIn(await api('/auth',{initData:tg.initData}));}

@@ -1,4 +1,58 @@
-const catalog=`
+const catalog=`Podkidnoy Durak|Подкидной дурак|Durak mit Nachwerfen|Durak con descarte
+Perevodnoy Durak|Переводной дурак|Durak mit Weitergeben|Durak con transferencia
+Computer opponents|Компьютерные соперники|Computergegner|Rivales del ordenador
+2 seats|2 места|2 Plätze|2 plazas
+5 seats|5 мест|5 Plätze|5 plazas
+6 seats|6 мест|6 Plätze|6 plazas
+{n} computers|Компьютеров: {n}|{n} Computer|{n} ordenadores
+ATTACKER|АТАКУЮЩИЙ|ANGREIFER|ATACANTE
+DEFENDER|ОТБИВАЮЩИЙСЯ|VERTEIDIGER|DEFENSOR
+OUT|ВЫШЕЛ|FERTIG|FUERA
+Draw.|Ничья.|Unentschieden.|Empate.
+{player} is the durak.|{player} остался дураком.|{player} ist der Durak.|{player} es el durak.
+{player} is taking.|{player} берёт карты.|{player} nimmt auf.|{player} recoge las cartas.
+{player} attacks {other}.|{player} атакует {other}.|{player} greift {other} an.|{player} ataca a {other}.
+{player} opens the attack.|Первым ходит {player}.|{player} beginnt den Angriff.|{player} inicia el ataque.
+Trump: {suit}|Козырь: {suit}|Trumpf: {suit}|Triunfo: {suit}
+Stock: {n}|Колода: {n}|Stapel: {n}|Mazo: {n}
+Discard: {n}|Отбой: {n}|Ablage: {n}|Descartes: {n}
+Defend against {card}|Отбить {card}|{card} abwehren|Defender contra {card}
+Rematch|Ещё партия|Neue Partie|Revancha
+Take|Беру|Nehmen|Recoger
+Transfer attack|Перевести атаку|Angriff weitergeben|Transferir ataque
+Multiple cards|Несколько карт|Mehrere Karten|Varias cartas
+Attack ({n})|Ходить ({n})|Angreifen ({n})|Atacar ({n})
+Done throwing in|Больше не подкидываю|Nicht weiter nachwerfen|No añadir más
+I want to throw in: {rank}|Хочу подкинуть: {rank}|Ich möchte nachwerfen: {rank}|Quiero añadir: {rank}
+Allow {player}: {rank}|Разрешить {player}: {rank}|{player} erlauben: {rank}|Permitir a {player}: {rank}
+Requests: {n}|Запросов: {n}|Anfragen: {n}|Solicitudes: {n}
+Request pending: {rank}|Запрос ожидает ответа: {rank}|Anfrage ausstehend: {rank}|Solicitud pendiente: {rank}
+Games lost|Проиграно партий|Verlorene Partien|Partidas perdidas
+1 computer|1 компьютер|1 Computer|1 ordenador
+Game settings unavailable|Настройки игры недоступны|Spieleinstellungen nicht verfügbar|Ajustes del juego no disponibles
+Invalid game settings|Неверные настройки игры|Ungültige Spieleinstellungen|Ajustes del juego no válidos
+Choose a Durak variant|Выберите вариант дурака|Wähle eine Durak-Variante|Elige una variante de Durak
+Choose fewer computers than table seats; computers are available for Thousand and Durak|Компьютеров должно быть меньше, чем мест за столом; они доступны в тысяче и дураке|Wähle weniger Computer als Plätze; verfügbar für Tausend und Durak|Elige menos ordenadores que plazas; disponibles en Mil y Durak
+Choose 2 to 6 players|Выберите от 2 до 6 игроков|Wähle 2 bis 6 Spieler|Elige de 2 a 6 jugadores
+Fill all table seats|Заполните все места за столом|Besetze alle Plätze|Completa todas las plazas
+Invalid Durak settings|Неверные настройки дурака|Ungültige Durak-Einstellungen|Ajustes de Durak no válidos
+Not a player|Вы не участник|Du spielst nicht mit|No eres participante
+Card is not in your hand|Этой карты нет у вас на руках|Diese Karte ist nicht in deiner Hand|No tienes esa carta
+Attack limit exceeded|Превышен лимит атаки|Angriffslimit überschritten|Se superó el límite del ataque
+Not your turn or rank not approved|Сейчас не ваша очередь или достоинство не разрешено|Nicht dein Zug oder Rang nicht erlaubt|No es tu turno o el valor no está autorizado
+Opening cards must have equal ranks|Первый ход должен состоять из карт одного достоинства|Anfangskarten müssen denselben Rang haben|Las cartas iniciales deben tener el mismo valor
+Choose an uncovered card|Выберите непокрытую карту|Wähle eine ungedeckte Karte|Elige una carta sin cubrir
+Card cannot beat this attack|Эта карта не бьёт выбранную|Diese Karte kann den Angriff nicht schlagen|Esta carta no puede cubrir el ataque
+Cannot transfer this attack|Эту атаку нельзя перевести|Dieser Angriff kann nicht weitergegeben werden|No se puede transferir este ataque
+Next defender has too few cards|У следующего игрока недостаточно карт|Der nächste Verteidiger hat zu wenige Karten|El siguiente defensor tiene pocas cartas
+Cannot request this rank|Нельзя запросить это достоинство|Dieser Rang kann nicht angefragt werden|No se puede solicitar este valor
+Already requested or approved|Уже запрошено или разрешено|Bereits angefragt oder erlaubt|Ya solicitado o autorizado
+Only the current attacker can approve|Разрешить может только текущий атакующий|Nur der aktuelle Angreifer darf zustimmen|Solo el atacante actual puede autorizar
+Request is no longer pending|Запрос уже не ожидает ответа|Die Anfrage ist nicht mehr offen|La solicitud ya no está pendiente
+Finish this game first|Сначала завершите эту партию|Beende zuerst diese Partie|Termina primero esta partida
+Game finished|Партия завершена|Partie beendet|Partida terminada
+Durak is not accepting moves|Сейчас нельзя сделать ход в дураке|Durak nimmt gerade keine Züge an|Durak no admite jugadas ahora
+
 Resume game|Продолжить игру|Spiel fortsetzen|Continuar partida
 View record|Посмотреть запись|Protokoll ansehen|Ver registro
 Deal points: {n}; match score: {points}|За раздачу: {n}; счёт партии: {points}|Rundenpunkte: {n}; Spielstand: {points}|Puntos de la mano: {n}; partida: {points}
@@ -256,7 +310,7 @@ let active;try{active=localStorage.getItem('pastimer-language');}catch{}if(!loca
 export const language=()=>active;
 const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const patterns=catalog.filter(([key])=>key.includes('{')).map(([key])=>{const names=[...key.matchAll(/\{(\w+)\}/g)].map(m=>m[1]);let source='',at=0;for(const m of key.matchAll(/\{(\w+)\}/g)){source+=escape(key.slice(at,m.index))+(m[1]==='n'||m[1]==='n2'||m[1]==='points'?'(-?\\d+)':'(.+?)');at=m.index+m[0].length;}source+=escape(key.slice(at));return{key,names,re:new RegExp(`^${source}$`)}}).sort((a,b)=>b.key.replace(/\{\w+\}/g,'').length-a.key.replace(/\{\w+\}/g,'').length);
-function parameter(name,value){if(['rank','suit','status','date'].includes(name))return maps[active].get(value)??value;if(name==='player')return value==='Table'?(maps[active].get('Table')??value):value.replace(/Computer (\d+)/g,(_,n)=>(maps[active].get('Computer {n}')??'Computer {n}').replace('{n}',n));return value;}
+function parameter(name,value){if(['rank','suit','status','date'].includes(name))return maps[active].get(value)??value;if(name==='player'||name==='other')return value==='Table'?(maps[active].get('Table')??value):value.replace(/Computer (\d+)/g,(_,n)=>(maps[active].get('Computer {n}')??'Computer {n}').replace('{n}',n));return value;}
 export function translate(text){const original=text,trimmed=text.trim();if(!trimmed)return text;if(trimmed.match(/^\d+ cards$/)){const n=Number(trimmed.split(' ')[0]);const label=active==='ru'?(n%10===1&&n%100!==11?'карта':n%10>=2&&n%10<=4&&!(n%100>=12&&n%100<=14)?'карты':'карт'):active==='de'?(n===1?'Karte':'Karten'):active==='es'?(n===1?'carta':'cartas'):(n===1?'card':'cards');return text.replace(trimmed,`${n} ${label}`);}
  const exact=maps[active].get(trimmed);if(exact)return original.replace(trimmed,exact);
  for(const p of patterns){const m=trimmed.match(p.re);if(!m)continue;let out=maps[active].get(p.key)??p.key;for(let i=0;i<p.names.length;i++)out=out.replaceAll(`{${p.names[i]}}`,parameter(p.names[i],m[i+1]));return original.replace(trimmed,out);}

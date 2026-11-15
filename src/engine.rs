@@ -30,8 +30,20 @@ impl Engine {
             (_, None)
                 | (GameId::HighCard, Some(GameState::HighCard(_)))
                 | (GameId::Thousand, Some(GameState::Thousand(_)))
+                | (
+                    GameId::DurakPodkidnoy | GameId::DurakPerevodnoy,
+                    Some(GameState::Durak(_))
+                )
         );
-        ensure(matches, Error::internal())
+        ensure(matches, Error::internal())?;
+        if let Some(GameState::Durak(s)) = room.lifecycle.state() {
+            ensure(
+                room.game.durak_variant() == Some(s.variant)
+                    && room.durak_options.as_ref() == Some(&s.settings),
+                Error::conflict("Game settings unavailable"),
+            )?;
+        }
+        Ok(())
     }
     pub fn event(room: &mut Room, actor: &str, kind: &str, data: Value) -> Result<()> {
         let body = json!({"roomId":room.id,"seq":room.events.len()+1,"at":Utc::now().to_rfc3339_opts(SecondsFormat::Millis,true),
@@ -55,6 +67,13 @@ impl Engine {
             actor,
         )
     }
+    pub fn durak_outcome(
+        room: &mut Room,
+        result: Outcome<crate::durak::State>,
+        actor: &str,
+    ) -> Result<()> {
+        Self::transition(room, result.map(|s| GameState::Durak(Box::new(s))), actor)
+    }
     fn transition(room: &mut Room, result: Outcome<GameState>, actor: &str) -> Result<()> {
         let events = match &result {
             Outcome::Continue { events, .. }
@@ -67,6 +86,9 @@ impl Engine {
         match result {
             Outcome::Continue { state, .. } => {
                 if let GameState::Thousand(s) = &state {
+                    room.scores = s.ledger.totals.clone();
+                }
+                if let GameState::Durak(s) = &state {
                     room.scores = s.ledger.totals.clone();
                 }
                 room.lifecycle = Lifecycle::Playing(state);
@@ -116,6 +138,10 @@ impl Engine {
                 });
                 match state {
                     GameState::HighCard(_) => room.lifecycle = Lifecycle::Committing(state),
+                    GameState::Durak(s) => {
+                        let next = s.deal_cards(cards, &room.players)?;
+                        Self::durak_outcome(room, next, actor)?;
+                    }
                     GameState::Thousand(s) => {
                         let next = s.deal_cards(cards, &room.players)?;
                         Self::thousand_outcome(room, next, actor)?;
@@ -161,13 +187,45 @@ impl Engine {
         options: Option<crate::thousand::Settings>,
         computer_count: u8,
     ) -> Result<Value> {
+        self.create_room(player, game, options, None, computer_count)
+            .await
+    }
+    pub async fn create_durak(
+        &self,
+        player: Player,
+        game: GameId,
+        options: crate::durak::Settings,
+        computer_count: u8,
+    ) -> Result<Value> {
+        ensure(
+            game.durak_variant().is_some(),
+            Error::bad("Choose a Durak variant"),
+        )?;
+        self.create_room(player, game, None, Some(options), computer_count)
+            .await
+    }
+    async fn create_room(
+        &self,
+        player: Player,
+        game: GameId,
+        options: Option<crate::thousand::Settings>,
+        durak_options: Option<crate::durak::Settings>,
+        computer_count: u8,
+    ) -> Result<Value> {
+        let durak_options = if game.durak_variant().is_some() {
+            let settings = durak_options.unwrap_or_default();
+            settings.validate()?;
+            Some(settings)
+        } else {
+            None
+        };
         let options = match game {
             GameId::Thousand => {
                 let options = options.unwrap_or_default();
                 options.validate()?;
                 Some(options)
             }
-            GameId::HighCard => {
+            GameId::HighCard | GameId::DurakPodkidnoy | GameId::DurakPerevodnoy => {
                 ensure(
                     options.is_none(),
                     Error::bad("Settings are for Thousand rooms"),
@@ -177,12 +235,15 @@ impl Engine {
         };
         ensure(
             computer_count == 0
-                || (game == GameId::Thousand
-                    && options
-                        .as_ref()
-                        .is_some_and(|o| computer_count < o.player_count)),
+                || ((game == GameId::Thousand || game.durak_variant().is_some())
+                    && computer_count
+                        < options
+                            .as_ref()
+                            .map(|o| o.player_count)
+                            .or_else(|| durak_options.as_ref().map(|o| o.player_count))
+                            .unwrap_or(0)),
             Error::bad(
-                "Choose fewer computers than table seats; computers are available for Thousand",
+                "Choose fewer computers than table seats; computers are available for Thousand and Durak",
             ),
         )?;
         let mut tx = self.store.pool.begin_with("BEGIN IMMEDIATE").await?;
@@ -196,6 +257,7 @@ impl Engine {
             }
         };
         let mut room = Room {
+            durak_options,
             computer_due_at: None,
             computers: vec![],
             options,
@@ -212,7 +274,8 @@ impl Engine {
             commands: vec![],
             events: vec![],
         };
-        let creation = json!({"game":game,"gameVersion":1,"player":player,"options":room.options});
+        let creation =
+            json!({"game":game,"gameVersion":1,"player":player,"options":Self::options(&room)?});
         Self::event(&mut room, &player.id, "room.created", creation)?;
         for seat in 1..=computer_count {
             let computer = Player {
@@ -257,7 +320,13 @@ impl Engine {
                     < room
                         .options
                         .as_ref()
-                        .map_or(4, |o| usize::from(o.player_count)),
+                        .map(|o| usize::from(o.player_count))
+                        .or_else(|| {
+                            room.durak_options
+                                .as_ref()
+                                .map(|o| usize::from(o.player_count))
+                        })
+                        .unwrap_or(4),
                 Error::conflict("Room is full"),
             )?;
             room.players.push(player.clone());
@@ -297,6 +366,22 @@ impl Engine {
                     GameId::HighCard => {
                         let result = HighCard::initialize(&room.players);
                         Self::outcome(room, result, actor)?;
+                    }
+                    GameId::DurakPodkidnoy | GameId::DurakPerevodnoy => {
+                        let dealer = OsRng.gen_range(0..room.players.len());
+                        let state = crate::durak::State::new(
+                            &room.players,
+                            room.durak_options.clone().ok_or_else(Error::internal)?,
+                            room.game.durak_variant().ok_or_else(Error::internal)?,
+                            dealer,
+                        )?;
+                        Self::event(
+                            room,
+                            actor,
+                            "dealer.selected",
+                            json!({"player":room.players[dealer].id}),
+                        )?;
+                        Self::durak_outcome(room, state.shuffle(), actor)?;
                     }
                     GameId::Thousand => {
                         let options = room.options.clone().ok_or_else(Error::internal)?;
@@ -391,6 +476,40 @@ impl Engine {
                     Self::outcome(room, result, actor)?;
                 }
             }
+            Action::Durak { action } => {
+                let state = match &room.lifecycle {
+                    Lifecycle::Playing(GameState::Durak(s))
+                    | Lifecycle::Finished(GameState::Durak(s)) => s,
+                    _ => return Err(Error::conflict("Durak is not accepting moves")),
+                };
+                if matches!(action, crate::durak::Action::Rematch) {
+                    ensure(actor == room.host, Error::bad("Only the host can start"))?;
+                }
+                let deal = state.deal + u32::from(matches!(action, crate::durak::Action::Rematch));
+                let result = (**state)
+                    .clone()
+                    .apply(actor, action.clone(), &room.players)?;
+                let proof = MoveProof {
+                    deal_id: Some(deal),
+                    actor: actor.into(),
+                    version,
+                    action: Action::Durak {
+                        action: action.clone(),
+                    },
+                    salt: token(),
+                };
+                Self::event(
+                    room,
+                    actor,
+                    "move.committed",
+                    json!({"deal":deal,"commitment":hash(&proof)?}),
+                )?;
+                room.commands.push(proof);
+                if matches!(action, crate::durak::Action::Rematch) {
+                    Self::event(room, actor, "game.started", json!({"deal":deal}))?;
+                }
+                Self::durak_outcome(room, result, actor)?;
+            }
             Action::Thousand { action } => {
                 let Lifecycle::Playing(GameState::Thousand(state)) = &room.lifecycle else {
                     return Err(Error::conflict("Thousand is not accepting moves"));
@@ -444,6 +563,12 @@ impl Engine {
         Ok(())
     }
     fn next_computer(room: &Room, now: i64) -> Option<(String, Action)> {
+        if let Lifecycle::Playing(GameState::Durak(state)) = &room.lifecycle {
+            return room.computers.iter().find_map(|id| {
+                crate::durak::choose(state.view(id, &room.players))
+                    .map(|action| (id.clone(), Action::Durak { action }))
+            });
+        }
         let Lifecycle::Playing(GameState::Thousand(state)) = &room.lifecycle else {
             return None;
         };
@@ -458,7 +583,7 @@ impl Engine {
                 action,
                 Action::Thousand {
                     action: crate::thousand::Action::Play { .. }
-                }
+                } | Action::Durak { .. }
             ) {
                 1000
             } else {
@@ -525,7 +650,13 @@ impl Engine {
             Error::conflict("State changed; refresh and retry"),
         )?;
         ensure(
-            !matches!(room.lifecycle, Lifecycle::Finished(_)),
+            !matches!(room.lifecycle, Lifecycle::Finished(_))
+                || matches!(
+                    &command.action,
+                    Action::Durak {
+                        action: crate::durak::Action::Rematch
+                    }
+                ),
             Error::conflict("Game finished"),
         )?;
         let now = Utc::now().timestamp_millis();
@@ -555,17 +686,22 @@ impl Engine {
     fn game_time(room: &Room, kind: &str) -> Option<String> {
         room.events
             .iter()
+            .rev()
             .find(|e| e.kind == kind)
             .map(|e| e.at.clone())
     }
     fn summary(room: &Room) -> Value {
         let started = Self::game_time(room, "game.started")
             .or_else(|| room.events.first().map(|e| e.at.clone()));
-        let ended = Self::game_time(room, "game.finished").or_else(|| {
-            matches!(room.lifecycle, Lifecycle::Finished(_))
-                .then(|| room.events.last().map(|e| e.at.clone()))
-                .flatten()
-        });
+        let ended = if matches!(room.lifecycle, Lifecycle::Finished(_)) {
+            Self::game_time(room, "game.finished").or_else(|| {
+                matches!(room.lifecycle, Lifecycle::Finished(_))
+                    .then(|| room.events.last().map(|e| e.at.clone()))
+                    .flatten()
+            })
+        } else {
+            None
+        };
         json!({"id":room.id,"code":room.code,"game":room.game,"phase":room.lifecycle.phase(),"players":room.players,"scores":room.scores,"startedAt":started,"endedAt":ended})
     }
     pub async fn history(&self, actor: &str, before: Option<i64>) -> Result<Value> {
@@ -591,6 +727,8 @@ impl Engine {
         Self::member(&room, actor)?;
         let completed = if let Some(GameState::Thousand(s)) = room.lifecycle.state() {
             s.archives.len()
+        } else if let Some(GameState::Durak(s)) = room.lifecycle.state() {
+            s.archives.len()
         } else if matches!(room.lifecycle, Lifecycle::Finished(_)) {
             room.decks.len()
         } else {
@@ -604,6 +742,25 @@ impl Engine {
         let mut conn = self.store.pool.acquire().await?;
         let room = Self::load(&mut conn, code).await?;
         Self::member(&room, actor)?;
+        if let Some(GameState::Durak(state)) = room.lifecycle.state() {
+            let count = state.archives.len();
+            let decks: Vec<_> = room
+                .decks
+                .iter()
+                .enumerate()
+                .map(|(i, d)| {
+                    let mut value =
+                        json!({"commitment":d.commitment,"shuffleId":d.proof.shuffle_id});
+                    if i < count {
+                        value["proof"] = json!(d.proof);
+                    }
+                    value
+                })
+                .collect();
+            return Ok(
+                json!({"protocol":"pastimer-durak-audit-v1","game":room.game,"roomId":room.id,"phase":room.lifecycle.phase(),"options":state.settings,"players":room.players,"events":room.events,"decks":decks,"deals":state.archives,"commands":room.commands.iter().filter(|p| p.deal_id.is_some_and(|id| id as usize<=count)).collect::<Vec<_>>()}),
+            );
+        }
         if let Some(GameState::Thousand(state)) = room.lifecycle.state() {
             let count = state.archives.len();
             let decks: Vec<_> = room
@@ -641,6 +798,17 @@ impl Engine {
         }
         Ok(audit)
     }
+    fn options(room: &Room) -> Result<Option<Value>> {
+        if let Some(o) = &room.durak_options {
+            Ok(Some(serde_json::to_value(o)?))
+        } else {
+            room.options
+                .as_ref()
+                .map(serde_json::to_value)
+                .transpose()
+                .map_err(Into::into)
+        }
+    }
     pub fn view(room: &Room, viewer: &str) -> Result<Value> {
         Self::compatible(room)?;
         let table =
@@ -650,6 +818,9 @@ impl Engine {
                     state,
                     viewer,
                     &room.players,
+                ))),
+                Some(GameState::Durak(state)) => Some(TableView::Durak(Box::new(
+                    state.view(viewer, &room.players),
                 ))),
                 Some(GameState::Thousand(state)) => Some(TableView::Thousand(Box::new(
                     state.view(viewer, &room.players, Utc::now().timestamp_millis()),
@@ -689,11 +860,15 @@ impl Engine {
             .collect();
         Ok(serde_json::to_value(RoomView {
             started_at: Self::game_time(room, "game.started"),
-            ended_at: Self::game_time(room, "game.finished"),
+            ended_at: if matches!(room.lifecycle, Lifecycle::Finished(_)) {
+                Self::game_time(room, "game.finished")
+            } else {
+                None
+            },
             computer_due_at: room.computer_due_at,
             auction_calls,
             computers: room.computers.clone(),
-            options: room.options.clone(),
+            options: Self::options(room)?,
             id: room.id.clone(),
             code: room.code.clone(),
             host: room.host.clone(),

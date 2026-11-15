@@ -2,6 +2,7 @@
 pub mod audit;
 pub mod computer;
 pub mod crypto;
+pub mod durak;
 pub mod engine;
 pub mod error;
 pub mod game;

@@ -57,9 +57,10 @@ pub fn router(store: Store, config: Config) -> Result<Router> {
         .route("/archive.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/archive.js"))}))
         .route("/cards.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/cards.js"))}))
         .route("/thousand.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/thousand.js"))}))
+        .route("/durak.js",get(||async{([(header::CONTENT_TYPE,"text/javascript")],include_str!("../public/durak.js"))}))
         .route("/style.css",get(||async{([(header::CONTENT_TYPE,"text/css")],include_str!("../public/style.css"))}))
         .route("/api/health",get(||async{Json(json!({"ok":true}))}))
-        .route("/api/games",get(||async{Json(json!([{"id":"high-card-demo","name":"High card · platform demo","version":1,"minPlayers":2,"maxPlayers":4},{"id":"thousand","name":"Тысяча · Thousand","version":1,"minPlayers":3,"maxPlayers":4}]))}))
+        .route("/api/games",get(||async{Json(json!([{"id":"high-card-demo","name":"High card · platform demo","version":1,"minPlayers":2,"maxPlayers":4},{"id":"thousand","name":"Тысяча · Thousand","version":1,"minPlayers":3,"maxPlayers":4},{"id":"durak-podkidnoy","name":"Podkidnoy Durak","version":1,"minPlayers":2,"maxPlayers":6},{"id":"durak-perevodnoy","name":"Perevodnoy Durak","version":1,"minPlayers":2,"maxPlayers":6}]))}))
         .route("/api/auth",post(login)).route("/api/me",get(me))
         .route("/api/rooms",post(create)).route("/api/rooms/{code}",get(read))
         .route("/api/rooms/active",get(active_room))
@@ -241,7 +242,7 @@ async fn active_room(State(state): State<App>, headers: HeaderMap) -> Result<Jso
 struct Create {
     game: GameId,
     #[serde(default)]
-    options: Option<crate::thousand::Settings>,
+    options: Option<Value>,
     #[serde(default)]
     computer_count: u8,
 }
@@ -252,12 +253,29 @@ async fn create(
 ) -> Result<Json<Value>> {
     let p = player(&state, &headers).await?;
     let body = parsed(body)?;
-    Ok(Json(
+    let room = if body.game.durak_variant().is_some() {
+        let options = body
+            .options
+            .map(serde_json::from_value::<crate::durak::Settings>)
+            .transpose()
+            .map_err(|_| Error::bad("Invalid Durak settings"))?
+            .unwrap_or_default();
         state
             .engine
-            .create_with_computers(p, body.game, body.options, body.computer_count)
-            .await?,
-    ))
+            .create_durak(p, body.game, options, body.computer_count)
+            .await?
+    } else {
+        let options = body
+            .options
+            .map(serde_json::from_value::<crate::thousand::Settings>)
+            .transpose()
+            .map_err(|_| Error::bad("Invalid game settings"))?;
+        state
+            .engine
+            .create_with_computers(p, body.game, options, body.computer_count)
+            .await?
+    };
+    Ok(Json(room))
 }
 async fn read(
     State(state): State<App>,

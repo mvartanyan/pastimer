@@ -61,7 +61,7 @@ export function sortedHand(cards,mode='suit',game='thousand'){
   return [...cards].sort((a,b)=>mode==='rank'?rank(b)-rank(a)||suits.indexOf(a.slice(-1))-suits.indexOf(b.slice(-1)):suits.indexOf(a.slice(-1))-suits.indexOf(b.slice(-1))||rank(b)-rank(a));
 }
 export function layoutHand(){
-  const hand=document.getElementById('hand');if(!hand?.children.length)return;
+  const hand=document.getElementById('hand');if(!hand?.children.length||hand.classList.contains('durak-hand'))return;
   const n=hand.children.length,available=Math.max(120,hand.clientWidth-8),height=Math.max(60,hand.clientHeight-8),width=Math.min(112,height*5/7,available);
   const overlap=n>1?Math.max(0,(n*width-available)/(n-1)):0;
   hand.style.setProperty('--card-width',`${width}px`);hand.parentElement.style.setProperty('--card-width',`${width}px`);hand.style.setProperty('--overlap',`${overlap}px`);

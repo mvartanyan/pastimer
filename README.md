@@ -2,6 +2,8 @@
 
 A Rust server for multiplayer Telegram card games, with SQLite persistence and a shared Mini App. **Thousand / тысяча is the first complete game**, with the agreed house rules for three or four players. See the [English rules](docs/thousand-rules.md) or [русские правила](docs/thousand-rules.ru.md). `high-card-demo` is a five-round infrastructure exercise for 2–4 players.
 
+This checkout also implements **Podkidnoy and Perevodnoy Durak / подкидной и переводной дурак** for two to six players, with optional computer seats. See the agreed [English rules](docs/durak-rules.md) and [Russian rules](docs/durak-rules.ru.md). Helpers request permission separately for each rank; the current attacker may approve or ignore requests. The hand uses two rows with horizontal scrolling, including mouse dragging. This Durak addition has not been deployed to Horse.
+
 Live deployment: [1000.vartanyan.com](https://1000.vartanyan.com). Open [@pastimerbot](https://t.me/pastimerbot) in Telegram and use `Play / Играть` for signed Mini App access. [Horse deployment and verification record](docs/horse-resume-2026-11-15.md).
 
 Starting a new session? Read the [handoff](docs/handoff.md) for implementation status, source map, local setup, validation and the live Horse deployment record. [AGENTS.md](AGENTS.md) records project conventions; the [screenshot gallery](docs/screenshots/README.md) shows the current UI.
@@ -99,6 +101,13 @@ For this managed cloud, `bash scripts/install-cloud.sh` installs/activates the p
 The cloud development workspace is not production hosting. The current storage target is one host with a private persistent SQLite volume. Multiple workers/hosts require a separate deployment design; a connection pool does not make SQLite a distributed database.
 
 ## Commands and audit verification
+
+Durak tables use `game: "durak-podkidnoy"` or `game: "durak-perevodnoy"`, `options: {"playerCount": 2}` (2-6), and optional `computerCount` smaller than the table size. Start deals immediately after publishing the deck commitment. Choose the table size and computer count in the lobby; a computer may occupy any seat except the creating human's.
+
+Durak commands use `{"type":"durak","action":{...}}` with these actions: `attack` (`cards`, one or several legal cards), `defend` (`attack`, the uncovered card, and `card`, its cover), `transfer` (`card`), `take`, `request` (`rank`), `approve` (`player`, `rank`), and `pass` (finish the current throw-in opportunity). The host can request `rematch` after settlement, preserving the seats and cumulative loss counts. Public `table.controls` identifies legal choices; pending rank requests are visible only to their requester and the current attacker. Permission never bypasses clockwise turn order or authorizes another rank.
+
+Durak audits use `pastimer-durak-audit-v1`. They reveal settled games' decks, commands, card movements and completed attacks; the current game remains sealed. The same offline verifier checks commitments, event chains, saved receipts and complete legal-action replay. Records display games lost rather than card points.
+
 
 Create a Thousand room with `POST /api/rooms`:
 

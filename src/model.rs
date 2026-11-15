@@ -84,10 +84,26 @@ pub enum GameId {
     HighCard,
     #[serde(rename = "thousand")]
     Thousand,
+    #[serde(rename = "durak-podkidnoy")]
+    DurakPodkidnoy,
+    #[serde(rename = "durak-perevodnoy")]
+    DurakPerevodnoy,
+}
+impl GameId {
+    pub fn durak_variant(self) -> Option<crate::durak::Variant> {
+        match self {
+            Self::DurakPodkidnoy => Some(crate::durak::Variant::Podkidnoy),
+            Self::DurakPerevodnoy => Some(crate::durak::Variant::Perevodnoy),
+            _ => None,
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Action {
+    Durak {
+        action: crate::durak::Action,
+    },
     Thousand {
         action: crate::thousand::Action,
     },
@@ -114,6 +130,7 @@ pub struct Command {
 pub enum GameState {
     HighCard(HighCardState),
     Thousand(Box<crate::thousand::State>),
+    Durak(Box<crate::durak::State>),
 }
 impl<'de> Deserialize<'de> for GameState {
     fn deserialize<D: serde::Deserializer<'de>>(
@@ -124,6 +141,7 @@ impl<'de> Deserialize<'de> for GameState {
         enum Tagged {
             HighCard(HighCardState),
             Thousand(Box<crate::thousand::State>),
+            Durak(Box<crate::durak::State>),
         }
         #[derive(Deserialize)]
         #[serde(untagged)]
@@ -134,6 +152,7 @@ impl<'de> Deserialize<'de> for GameState {
         Ok(match Stored::deserialize(deserializer)? {
             Stored::Tagged(Tagged::HighCard(s)) | Stored::Legacy(s) => Self::HighCard(s),
             Stored::Tagged(Tagged::Thousand(s)) => Self::Thousand(s),
+            Stored::Tagged(Tagged::Durak(s)) => Self::Durak(s),
         })
     }
 }
@@ -202,6 +221,8 @@ pub struct Event {
 #[serde(rename_all = "camelCase")]
 pub struct Room {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub durak_options: Option<crate::durak::Settings>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub computer_due_at: Option<i64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub computers: Vec<String>,
@@ -231,7 +252,7 @@ pub struct RoomView {
     pub computer_due_at: Option<i64>,
     pub auction_calls: Vec<AuctionCall>,
     pub computers: Vec<String>,
-    pub options: Option<crate::thousand::Settings>,
+    pub options: Option<Value>,
     pub id: String,
     pub code: String,
     pub host: String,
@@ -268,4 +289,5 @@ pub struct DeckView {
 pub enum TableView {
     HighCard(crate::game::HighCardView),
     Thousand(Box<crate::thousand::View>),
+    Durak(Box<crate::durak::View>),
 }
