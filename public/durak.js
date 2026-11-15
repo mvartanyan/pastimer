@@ -6,31 +6,40 @@ export function deferDurakRender(next,render){if(pointer){deferred=()=>render(ne
 function release(){pointer=null;const task=deferred;deferred=null;setTimeout(()=>{task?.();swiped=false;},0);}
 window.addEventListener('pointerup',release);window.addEventListener('pointercancel',()=>{swiped=true;release();});
 window.addEventListener('pointermove',e=>{if(pointer&&Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>8){swiped=true;if(pointer.type==='mouse')pointer.root.scrollLeft=pointer.left+pointer.x-e.clientX;}});
+function revealPair(pairs,card){
+  if(!card)return;const r=pairs.getBoundingClientRect(),b=card.getBoundingClientRect();
+  if(b.left<r.left+4)pairs.scrollLeft-=r.left+4-b.left;
+  else if(b.right>r.right-4)pairs.scrollLeft+=b.right-r.right+4;
+}
+export function layoutDurak(){const pairs=document.querySelector('#room[data-game^="durak-"] .durak-pairs');if(pairs)revealPair(pairs,pairs.querySelector('.is-target'));}
 export function durakSeats(room,me){
   const t=room.table;
-  return room.players.map(p=>{const seat=t?.seats.find(s=>s.id===p.id),self=p.id===me.id,box=node('div','',`seat durak-seat${t?.turn===p.id?' is-turn':''}`);box.dataset.player=p.id;
+  return room.players.map(p=>{const seat=t?.seats.find(s=>s.id===p.id),self=p.id===me.id,box=node('div','',`seat durak-seat${t?.turn===p.id?' is-turn':''}`);box.dataset.player=p.id;box.title=p.name;
     const info=node('div','','seat-info');info.append(node('div',p.name+(self?' - you':''),'seat-name'),node('span',seat?.finished?'OUT':t?.defender===p.id?'DEFENDER':t?.attacker===p.id?'ATTACKER':'','seat-role'));
     box.append(info);if(seat){const count=node('span','','seat-cards');count.append(cardBack(),node('span',String(seat.count)));box.append(count);}return box;});
 }
 export function renderDurak({room,me,send,run,repaint,sortMode,sortedHand}){
   const t=room.table,c=t.controls,root=document.getElementById('hand'),surface=document.getElementById('thousand-table'),actions=document.getElementById('game-actions');
   const key=`${room.id}:${t.deal}:${t.attacker}:${t.defender}:${t.pairs.length}`;
-  if(tableKey!==key){tableKey=key;transfer=false;multiple=false;chosen=[];target=null;}
+  const changed=tableKey!==key;
+  if(changed){tableKey=key;transfer=false;multiple=false;chosen=[];target=null;}
   if(!c.transferCards.length)transfer=false;
   const name=id=>room.players.find(p=>p.id===id)?.name??id;
   const button=(label,handler,cls='secondary')=>{const b=node('button',label,cls);b.type='button';b.onclick=()=>run(handler);return b;};
   const localButton=(label,handler)=>{const b=node('button',label,'secondary');b.type='button';b.onclick=handler;return b;};
+  surface.hidden=false;surface.className='durak-table';
+  const previousPairs=surface.querySelector('.durak-pairs'),previousPairScroll=previousPairs?.scrollLeft??0,previousTarget=changed?null:previousPairs?.querySelector('.is-target')?.dataset.attack,previousCount=previousPairs?.children.length??0;
   surface.hidden=false;surface.className='durak-table';surface.replaceChildren();
   document.getElementById('marriage-options').hidden=true;
   document.getElementById('phase').textContent=t.phase==='finished'?(t.loser?`${name(t.loser)} is the durak.`:'Draw.') :t.taking?`${name(t.defender)} is taking.`:`${name(t.attacker)} attacks ${name(t.defender)}.`;
   const info=node('div','','durak-info'),trump=node('div','','durak-trump');
-  if(t.trump){trump.append(playingCard(t.trump),node('span',`Trump: ${suits[t.trump.slice(-1)]}`));}
-  info.append(trump,node('span',`Stock: ${t.stockCount}`),node('span',`Discard: ${t.discardCount}`));if(t.attacker===me.id&&t.requests.length)info.append(node('strong',`Requests: ${t.requests.length}`,'durak-request-count'));surface.append(info);
+  if(t.trump){trump.append(playingCard(t.trump),node('span',`Trump: ${t.trump.slice(0,-1)}${suits[t.trump.slice(-1)]}`));}
+  info.append(trump,node('span',`Stock: ${t.stockCount}`),node('span',`Attack: ${t.pairs.length}/${t.limit}`));if(t.attacker===me.id&&t.requests.length)info.append(node('strong',`Requests: ${t.requests.length}`,'durak-request-count'));surface.append(info);
   const pairs=node('div','','durak-pairs');
   const uncovered=c.defences.map(d=>d.attack);if(!uncovered.includes(target))target=uncovered[0]??null;
-  for(const pair of t.pairs){const box=node('div','',`durak-pair${pair.card===target?' is-target':''}`),attack=node('button','','durak-attack');attack.type='button';attack.setAttribute('aria-label',`Defend against ${pair.card}`);attack.disabled=!uncovered.includes(pair.card);attack.append(playingCard(pair.card));attack.onclick=()=>{target=pair.card;transfer=false;repaint();};box.append(attack);if(pair.cover){const cover=playingCard(pair.cover);cover.classList.add('durak-cover');box.append(cover);}pairs.append(box);}
-  surface.append(pairs);
-  if(!t.pairs.length && t.phase!=='finished')surface.append(node('p',`${name(t.attacker)} opens the attack.`,'durak-status'));
+  for(const pair of t.pairs){const box=node('div','',`durak-pair${pair.card===target?' is-target':''}`),attack=node('button','','durak-attack');box.dataset.attack=pair.card;attack.type='button';attack.setAttribute('aria-label',`Defend against ${pair.card}`);attack.disabled=!uncovered.includes(pair.card);attack.append(playingCard(pair.card));attack.onclick=()=>{target=pair.card;transfer=false;repaint();};box.append(attack);if(pair.cover){const cover=playingCard(pair.cover);cover.classList.add('durak-cover');box.append(cover);}pairs.append(box);}
+  surface.append(pairs);pairs.scrollLeft=previousPairScroll;if(target&&target!==previousTarget)layoutDurak();else if(!target&&t.pairs.length>previousCount)revealPair(pairs,pairs.lastElementChild);
+  if(!t.pairs.length && t.phase!=='finished')surface.append(node('p',c.attackCards.length?'Your turn - tap a card to play.':`${name(t.attacker)} opens the attack.`,'durak-status'));
   if(t.phase==='finished'){
     surface.append(node('h2',t.loser?`${name(t.loser)} is the durak.`:'Draw.','durak-result'));
     if(room.host===me.id)actions.append(button('Rematch',()=>send({type:'rematch'}),''));
@@ -43,6 +52,7 @@ export function renderDurak({room,me,send,run,repaint,sortMode,sortedHand}){
     if(t.attacker===me.id)for(const request of t.requests)actions.append(button(`Allow ${name(request.player)}: ${request.rank}`,()=>send({type:'approve',player:request.player,rank:request.rank}),''));
     else for(const request of t.requests)actions.append(node('span',`Request pending: ${request.rank}`,'durak-pending'));
   }
+  const sort=localButton(`Sort: ${sortMode}`,()=>document.getElementById('sort-hand').click());sort.classList.add('durak-compact-sort');actions.append(sort);
   const legal=transfer?c.transferCards:c.attackCards.length?c.attackCards:(c.defences.find(d=>d.attack===target)?.cards??[]);
   const left=root.dataset.table===room.id?root.scrollLeft:0;root.dataset.table=room.id;
   root.classList.add('durak-hand');root.onpointerdown=e=>{pointer={x:e.clientX,y:e.clientY,type:e.pointerType,root,left:root.scrollLeft};swiped=false;};

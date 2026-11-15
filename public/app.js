@@ -1,4 +1,4 @@
-import {renderDurak,durakSeats,deferDurakRender} from '/durak.js';
+import {renderDurak,durakSeats,deferDurakRender,layoutDurak} from '/durak.js';
 import {renderThousand,clearThousand,handCard,incoming,selectedTransfers,inspectTrick,bindDistributionDrag,layoutTrick} from '/thousand.js';
 import {installLanguages} from '/i18n.js';
 import {installArchive} from '/archive.js';
@@ -14,7 +14,7 @@ const pendingKey=()=>`pastimer-pending:${me.id}`;
 function setPending(value){pending=value;if(me){if(value)localStorage.setItem(pendingKey(),JSON.stringify(value));else localStorage.removeItem(pendingKey());}sessionStorage.removeItem('pending-command');}
 function rememberRoom(code){localStorage.setItem(roomKey(),code);sessionStorage.setItem('room',code);$('resume-table').dataset.code=code;$('resume-table').textContent=`Return to table ${code}`;}
 function repaint(){if(room)render(room);}
-function viewport(){const tg=window.Telegram?.WebApp;document.documentElement.style.setProperty('--app-height',`${Math.min(innerHeight,tg?.viewportHeight||innerHeight,visualViewport?.height||innerHeight)}px`);layoutHand();layoutTrick();}
+function viewport(){const tg=window.Telegram?.WebApp;document.documentElement.style.setProperty('--app-height',`${Math.min(innerHeight,tg?.viewportHeight||innerHeight,visualViewport?.height||innerHeight)}px`);layoutHand();layoutTrick();layoutDurak();}
 async function api(path, body) {
   const response = await fetch(`/api${path}`, { ...(body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}) });
   const value = await response.json();
@@ -79,15 +79,15 @@ function render(next) {
   $('marriage-options').hidden=room.game.startsWith('durak-');$('hand').classList.toggle('durak-hand',room.game.startsWith('durak-'));
   if(!room.game.startsWith('durak-'))$('hand').onpointerdown=null;
   $('thousand-table').classList.remove('durak-table');
-  renderSeats();clearThousand();$('table-actions').replaceChildren();$('game-actions').replaceChildren();$('thousand-table').replaceChildren();
+  renderSeats();clearThousand();$('table-actions').replaceChildren();$('game-actions').replaceChildren();if(room.table?.kind!=='durak')$('thousand-table').replaceChildren();
   $('phase').textContent={lobby:'Invite your friends. Share the table code.',committing:'The deck is committed. Confirm to start the demo.',playing:`Round ${room.table?.round??''} · choose your card.`,finished:'Game complete. The record is ready to verify.'}[room.phase];
   if(pending&&pending.code===room.code)$('table-actions').append(button('Retry previous move',()=>command(pending.action),'secondary'));
-  if(room.phase==='lobby'&&room.host===me.id){const start=button('Start game',()=>command({type:'start'}));start.disabled=room.players.length<(room.options?.playerCount??2);$('table-actions').append(start);}
+  if(room.phase==='lobby'&&room.host===me.id){const start=button('Start game',()=>command({type:'start'}));start.disabled=room.players.length<(room.options?.playerCount??2);$(room.game.startsWith('durak-')?'game-actions':'table-actions').append(start);}
   if(room.phase==='committing'&&!room.deck.acknowledgements.includes(me.id))$('table-actions').append(button('Save & acknowledge deck',async()=>{saveReceipt();await command({type:'acknowledge',shuffleId:room.deck.shuffleId,commitment:room.deck.commitment});}));
   const gifts=room.table?.kind==='thousand'?incoming(room,me):[],held=new Set(gifts.map(g=>g.card));
   const chosen=room.table?.kind==='thousand'?selectedTransfers(room):[];
   const hand=sortedHand((room.table?.hand??[]).filter(c=>!held.has(c)&&!chosen.includes(c)),sortMode,room.game);
-  $('hand-zone').hidden=false;$('hand-count').textContent=`${(room.table?.hand?.length??0)-chosen.length} cards`;
+  $('hand-zone').hidden=room.game.startsWith('durak-')&&!room.table;$('hand-count').textContent=`${(room.table?.hand?.length??0)-chosen.length} cards`;
   $('room').dataset.receiving=String(gifts.length>0);$('sort-hand').style.visibility=gifts.length?'hidden':'visible';
   $('sort-hand').textContent=`Sort: ${sortMode}`;$('sort-hand').setAttribute('aria-label',`Sort hand by ${sortMode==='suit'?'rank':'suit'}`);
   $('incoming-zone').replaceChildren();
@@ -103,6 +103,9 @@ function render(next) {
     if(room.table.phase==='finished'){const again=button('New table',lobby);const history=button('Played games',()=>archive.showArchive(),'secondary');$('game-actions').replaceChildren(again,history);}
   }else if(room.table?.kind==='durak'){
     renderDurak({room,me,send:action=>command({type:'durak',action}),run,repaint,sortMode,sortedHand});
+  }else if(room.game.startsWith('durak-')){
+    const remaining=room.options.playerCount-room.players.length;$('thousand-table').hidden=false;$('thousand-table').className='durak-table';
+    const status=element('div','','durak-lobby-status');status.append(element('p',remaining?`Waiting for ${remaining} more players.`:room.host===me.id?'All seats are filled. Start the game.':'Waiting for the host to start.'));if(remaining)status.append(element('p','For solo play, create a table with computer opponents.','durak-lobby-help'));$('thousand-table').append(status);
   }else{
     for(const card of $('hand').querySelectorAll('.card'))card.disabled=!(room.table?.actions??[]).some(a=>a.input==='card');
     $('thousand-table').hidden=false;const center=element('div','','table-center');const logo=element('div','♠','bid-emblem');logo.style.cssText='font:45px Georgia;color:#d8c08d';center.append(logo,element('p',room.phase==='lobby'?`Players at table: ${room.players.length}`:'The next hand awaits.','table-instruction'));$('thousand-table').append(center);

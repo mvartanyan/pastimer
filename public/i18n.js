@@ -15,8 +15,13 @@ Draw.|Ничья.|Unentschieden.|Empate.
 {player} opens the attack.|Первым ходит {player}.|{player} beginnt den Angriff.|{player} inicia el ataque.
 Trump: {suit}|Козырь: {suit}|Trumpf: {suit}|Triunfo: {suit}
 Stock: {n}|Колода: {n}|Stapel: {n}|Mazo: {n}
+Attack: {n}/{limit}|Атака: {n}/{limit}|Angriff: {n}/{limit}|Ataque: {n}/{limit}
 Discard: {n}|Отбой: {n}|Ablage: {n}|Descartes: {n}
 Defend against {card}|Отбить {card}|{card} abwehren|Defender contra {card}
+Waiting for {n} more players.|Ожидаем ещё игроков: {n}.|Warten auf {n} weitere Spieler.|Esperando a {n} jugadores más.
+All seats are filled. Start the game.|Все места заняты. Начните игру.|Alle Plätze sind besetzt. Starte das Spiel.|Todas las plazas están ocupadas. Inicia la partida.
+Waiting for the host to start.|Ждём начала игры от создателя стола.|Warten auf den Gastgeber.|Esperando a que el anfitrión inicie la partida.
+For solo play, create a table with computer opponents.|Чтобы играть одному, создайте стол с компьютерными соперниками.|Erstelle zum Alleinspielen einen Tisch mit Computergegnern.|Para jugar en solitario, crea una mesa con rivales del ordenador.
 Rematch|Ещё партия|Neue Partie|Revancha
 Take|Беру|Nehmen|Recoger
 Transfer attack|Перевести атаку|Angriff weitergeben|Transferir ataque
