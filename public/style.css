@@ -422,3 +422,5 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 #room[data-game^="durak-"] .room-tools .icon-button{font-size:14px;min-height:36px}
 @media(max-height:600px) and (max-aspect-ratio:1/1){#room[data-game^="durak-"] .room-tools .icon-button{font-size:13px;min-height:32px}}
 @media(max-height:500px) and (min-aspect-ratio:1/1){#room[data-game^="durak-"]{grid-template-rows:40px 24px minmax(0,1fr) 52px}}
+/* An unpaired upper-row card is fully visible and must be tappable over its whole face. */
+#room .hand.durak-hand>.card:nth-child(odd):last-child{height:var(--durak-hand-height);min-height:106px}

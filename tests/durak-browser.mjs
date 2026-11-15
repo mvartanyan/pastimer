@@ -55,7 +55,7 @@ try{
  fixture.table={...fixture.table,phase:'attack',hand:all,seats:fixture.players.map(p=>({...p,count:p.id===me?36:0,finished:false})),attacker:me,originalAttacker:me,defender:other,turn:me,pairs:[],taking:false,requests:[],approvals:[],stockCount:0,discardCount:0,controls:{attackCards:all,defences:[],transferCards:[],requestRanks:[],canTake:false,canPass:false}};
  await page.route(`**/api/rooms/${fixture.code}`,route=>route.fulfill({json:fixture}));
  await page.route('**/api/rooms/active',route=>route.fulfill({json:fixture}));
- async function controlClick(locator){const response=page.waitForResponse(r=>r.url().endsWith('/commands')&&r.request().method()==='POST');await locator.click();await response;await page.waitForFunction(version=>document.querySelector('#room').dataset.version===String(version),fixture.version);}
+ async function controlClick(locator,options){const response=page.waitForResponse(r=>r.url().endsWith('/commands')&&r.request().method()==='POST');await locator.click(options);await response;await page.waitForFunction(version=>document.querySelector('#room').dataset.version===String(version),fixture.version);}
  let sent=[];await page.route(`**/api/rooms/${fixture.code}/commands`,async route=>{sent.push(route.request().postDataJSON());fixture.version++;await route.fulfill({json:fixture});});
  await page.reload();await page.waitForFunction(()=>document.querySelectorAll('#hand .card').length===36);
  for(const [width,height] of [[320,480],[390,844],[844,390],[1024,768]]){
@@ -74,6 +74,11 @@ try{
  await page.locator('#hand').evaluate(e=>e.scrollLeft=0);await page.mouse.move(hand.x+190,hand.y+30);await page.mouse.down();await page.mouse.move(hand.x+70,hand.y+30,{steps:8});await page.mouse.up();assert.ok(await page.locator('#hand').evaluate(e=>e.scrollLeft)>30,'a waiting player can drag a disabled hand');
  fixture.table.controls.attackCards=all;fixture.version++;await page.waitForFunction(version=>document.querySelector('#room').dataset.version===String(version),fixture.version);
  await page.locator('#hand').evaluate(e=>e.scrollLeft=e.scrollWidth);await controlClick(page.locator('#hand .card').last());assert.equal(sent.length,1,'rightmost overflow card is playable');
+ for(const count of [1,3,5]){
+  fixture.table.hand=all.slice(0,count);fixture.table.controls.attackCards=fixture.table.hand;fixture.version++;await page.waitForFunction(version=>document.querySelector('#room').dataset.version===String(version),fixture.version);
+  const last=page.locator('#hand .card').last(),box=await last.boundingBox(),face=await last.locator('svg').boundingBox(),code=await last.getAttribute('data-card');assert.ok(box.height>=face.height-1,'an unpaired card must have a full-face tap target');
+  await controlClick(last,{position:{x:box.width/2,y:box.height*.8}});assert.deepEqual(sent.at(-1).action,{type:'durak',action:{type:'attack',cards:[code]}});
+ }
  fixture.table={...fixture.table,hand:['9H','JC'],attacker:other,defender:helper,turn:other,pairs:[{card:'6C',player:other,cover:'9C'}],controls:{attackCards:[],defences:[],transferCards:[],requestRanks:['9'],canTake:false,canPass:false}};fixture.version++;await page.reload();await controlClick(page.getByRole('button',{name:'I want to throw in: 9',exact:true}));assert.deepEqual(sent.at(-1).action,{type:'durak',action:{type:'request',rank:'9'}});
  fixture.table.pairs.push({card:'9D',player:other,cover:'JD'});fixture.table.approvals=[{player:me,rank:'9'}];fixture.table.controls.requestRanks=['J'];fixture.version++;await page.reload();await controlClick(page.getByRole('button',{name:'I want to throw in: J',exact:true}));assert.equal(sent.at(-1).action.action.rank,'J');
  fixture.table.attacker=me;fixture.table.requests=[{player:helper,rank:'J'}];fixture.table.controls.requestRanks=[];fixture.version++;await page.reload();await controlClick(page.getByRole('button',{name:'Allow Durak 2: J',exact:true}));assert.deepEqual(sent.at(-1).action,{type:'durak',action:{type:'approve',player:helper,rank:'J'}});
