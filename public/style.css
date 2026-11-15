@@ -316,3 +316,4 @@ dialog::backdrop{background:#07121acc;backdrop-filter:blur(3px)}
 #room .action-dock{display:flex}
 #room[data-presentation=finished] .deal-summary{width:auto;height:auto;border-radius:30px}
 #room[data-presentation=finished] .result-score>small{display:none}
+@media(max-width:600px){.intro-deck{display:none}}
