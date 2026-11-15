@@ -89,6 +89,7 @@ try{
  fixture.players.push(...Array.from({length:3},(_,i)=>({id:`fixture:${i}`,name:`Computer ${i+3}`})));
  fixture.table={...fixture.table,hand:['AC','AD','AH','AS','KC','KD'],attacker:other,defender:me,turn:other,requests:[],approvals:[],pairs:['6C','6D','6H','6S','7C','7D'].map((card,i)=>({card,player:other,cover:i<5?['8C','8D','8H','8S','9C'][i]:null})),seats:fixture.players.map(p=>({...p,count:6,finished:false})),controls:{attackCards:[],defences:[{attack:'7D',cards:['AD']}],transferCards:[],requestRanks:[],canTake:true,canPass:false}};fixture.version++;
  await page.reload();
+ await page.waitForFunction(version=>document.querySelector('#room').dataset.version===String(version)&&document.querySelector('.durak-pairs .is-target'),fixture.version);
  for(const [width,height] of [[320,480],[390,650],[390,844],[844,390]]){
   await page.setViewportSize({width,height});await page.waitForFunction(()=>parseFloat(document.documentElement.style.getPropertyValue('--app-height'))===innerHeight);
   const metrics=await page.evaluate(()=>{const region=document.querySelector('.durak-pairs').getBoundingClientRect(),button=document.querySelector('.durak-attack'),r=button.getBoundingClientRect();return{width:r.width,height:r.height,regionHeight:region.height,visible:r.top>=region.top-1&&r.bottom<=region.bottom+1,actionFont:parseFloat(getComputedStyle(document.querySelector('#game-actions button')).fontSize)};});
