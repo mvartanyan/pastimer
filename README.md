@@ -4,7 +4,7 @@ A Rust server for multiplayer Telegram card games, with SQLite persistence and a
 
 Pastimer also implements **Podkidnoy and Perevodnoy Durak / подкидной и переводной дурак** for two to six players, with optional computer seats. See the agreed [English rules](docs/durak-rules.md) and [Russian rules](docs/durak-rules.ru.md). Helpers request permission separately for each rank; the current attacker may approve or ignore requests. The hand uses two rows with horizontal scrolling, including mouse dragging. Both variants and computer opponents are deployed on Horse.
 
-Live deployment: [1000.vartanyan.com](https://1000.vartanyan.com). Open [@pastimerbot](https://t.me/pastimerbot) in Telegram and use `Play / Играть` for signed Mini App access. [Horse deployment and verification record](docs/horse-durak-readable-2026-11-15.md).
+Live deployment: [1000.vartanyan.com](https://1000.vartanyan.com). Open [@pastimerbot](https://t.me/pastimerbot) in Telegram and use `Play / Играть` for signed Mini App access. [Horse deployment and verification record](docs/horse-clarity-2026-11-16.md).
 
 Starting a new session? Read the [handoff](docs/handoff.md) for implementation status, source map, local setup, validation and the live Horse deployment record. [AGENTS.md](AGENTS.md) records project conventions; the [screenshot gallery](docs/screenshots/README.md) shows the current UI.
 

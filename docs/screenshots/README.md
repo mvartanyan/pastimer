@@ -28,3 +28,10 @@ node scripts/capture-screenshots.mjs
 The trump-marker preview uses the controlled legal-view fixture in `tests/marriage-browser.mjs`. The incoming-card preview comes from the receipt step in `tests/thousand-browser.mjs`. The capture helper writes the other four previews to `artifacts/screenshots/`, which is ignored by Git. Review the resulting images and copy the selected PNGs into this directory to update the committed gallery. No real Telegram bot token is required.
 
 The first seven images record the November 14 interface. The November 15 update adds fixed hand slots, captured-point scores, icon-only barrel markers and a persistent language switch. Run `node tests/marriage-browser.mjs` for the latest empty-hand and victory fixtures in `/tmp/pastimer-empty-hand.png` and `/tmp/pastimer-victory.png`.
+
+## Durak usability correction - November 16
+
+Headless browser fixtures of a six-seat defence with six attack cards. The turn prompt names the selected card and the legal response. The normal phone roster shows all seats, requests use dialogs, and landscape puts the hand beside the table. These are controlled UI projections, not a real Telegram-client capture. On very short screens, the table scrolls vertically to keep the selected defence target visible.
+
+- [Phone, 390x650](durak-defence-mobile.png).
+- [Landscape, 844x390](durak-defence-landscape.png).
