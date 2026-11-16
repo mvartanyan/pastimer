@@ -7,9 +7,9 @@ const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'{}');}catch{r
 const deliveryKey=(room,me)=>`pastimer-deliveries:${me.id}:${room.id}:${room.table.deal}`;
 function prepare(room){const key=`${room.id}:${room.table.deal}:${room.table.phase}`;if(key!==formKey){formKey=key;draft={transfers:{},target:0,announce:{},announceVersion:room.version};}if(draft.announceVersion!==room.version){draft.announce={};draft.announceVersion=room.version;}}
 export function incoming(room,me){
-  // Receipt acknowledgment precedes the recipient's first play. Reopening a
-  // later trick must not resurrect historical transfers or already played cards.
-  if(!room.table?.deliveries||room.table.hand.length!==8||['awaitShuffle','finished'].includes(room.table.phase))return [];
+  // Receipts are a preparation step. Once trick play starts, all held cards
+  // join the hand, even if the recipient never acknowledged a transfer.
+  if(!room.table?.deliveries||room.table.hand.length!==8||['awaitShuffle','trick','finished'].includes(room.table.phase))return [];
   const saved=read(deliveryKey(room,me));
   return room.table.deliveries.filter(d=>d.to===me.id&&d.card&&room.table.hand.includes(d.card)&&saved[d.id]!==2).map(d=>({...d,stage:saved[d.id]??(d.public?1:0)}));
 }

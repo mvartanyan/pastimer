@@ -1,6 +1,6 @@
 # Local-session handoff
 
-Updated 2026-11-15. Repository: `mvartanyan/pastimer`. Local Horse continuation: branch `codex/horse-deployment`; pulled `main` at `6376528`.
+Updated 2026-11-16. Repository: `mvartanyan/pastimer`. Local Horse continuation: branch `codex/horse-deployment`; pulled `main` at `6376528`.
 
 ## Where the work stands
 
@@ -79,6 +79,14 @@ Validation: all 58 Rust tests pass, including nine pure Durak tests and three Du
 The complete `npm run test:browser` suite passes, covering the demo and prior Thousand/marriage/archive/computer behavior plus both real three-player Durak games with offline-verified audits, reload and rematch. Controlled Durak views check a 36-card hand at 320x480, 390x844, 844x390 and 1024x768, exactly two rows, no page overflow, 44px minimum hand targets, scroll preservation, native touch and mouse dragging without card submission, dragging a disabled hand, new-rank request/approval buttons and English/Russian/German/Spanish localization. The controlled large-hand/request screenshots at `/tmp/pastimer-durak-large-hand.png` and `/tmp/pastimer-durak-mobile.png` were visually reviewed; these are browser test projections, not live Telegram captures. An initial loaded-run Thousand deadline timeout passed in a focused rerun and in the final complete suite; the new hidden settings label conflict found by regression testing was corrected.
 
 The initial Durak rollout used source `06354f6`; signed production browser games completed against one computer (two seats) and five computers (six seats), with deployed audit verification and fresh-session recovery. The six-seat game exercised 13 approvals and five transfers. All eight public assets match source, production auth/origin checks pass, and the original historical memberships and exact audit survived. The original PVC/database were preserved with an integrity-checked pre-rollout backup. A manual real Telegram-client Durak playthrough remains separate from the verified signed browser flows. The pre-existing untracked root `thousand-rules.ru.md` is preserved.
+
+## November 16 usability correction
+
+Owner feedback: Durak remained cluttered and unclear despite larger cards. The new UI has a dedicated two-line turn prompt based on the viewer's legal controls, names the selected attack card, and explains tap/Take/finish/transfer/wait states. All seats fit a three-column roster (two columns for two players), rather than disappearing into a horizontal strip. The hand uses separate rows when height permits, with 76px or 44px exposed upper-row areas on shorter screens. Landscape places the table beside the hand. Short screens can scroll the table vertically; a selected defence target is revealed automatically. Requests and approvals use one action button and an accessible dialog; sort and optional multiple-card attacks live under Options. Rules, server legal controls and computer policy are unchanged. All new copy is localized in four languages.
+
+The Thousand screenshot showed a glowing received card and a dimmed, disabled hand even after trick play began. Receipt prompts now end when the phase becomes `trick`; all held cards become normal legal-card candidates, and receipts cannot pause the forced-card timer during play. Pre-play open/secret receipt inspection is retained. The reproduced no-trump/diamond-ace fixture enables all eight non-diamond cards without auto-selecting one. A clubs-led fixture with exactly one legal club and an unacknowledged delivery submits that club exactly at two seconds. Tests still cover stale choices, inspection/visibility, leaving the table, deadline preservation and durable commands.
+
+Browser work is headless-only. Validation and rollout of this correction are in progress. Preserve the unrelated untracked root Thousand file.
 
 ## Source map
 

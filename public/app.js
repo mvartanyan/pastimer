@@ -25,7 +25,7 @@ function notice(message = '') { $('notice').textContent = message; }
 function element(tag, text, className) { const e = document.createElement(tag); e.textContent = text; if(className) e.className = className; return e; }
 function button(text, handler, className) { const e = element('button',text,className); e.onclick = () => run(handler); return e; }
 async function run(fn) { if(busy)return; busy=true; try { notice(); await fn(); } catch(e) { notice(e.message); } finally { busy=false; syncForcedMove(); } }
-function lobby(){cancelForcedMove();if(room)rememberRoom(room.code);document.body.classList.remove('in-room');clearThousand();document.querySelector('.intro').hidden=false;room=undefined;$('room').hidden=true;$('lobby').hidden=false;$('lobby-tools').hidden=false;$('resume-table').hidden=!localStorage.getItem(roomKey());try{window.Telegram?.WebApp?.BackButton?.hide?.();window.Telegram?.WebApp?.disableClosingConfirmation?.();}catch{} }
+function lobby(){document.getElementById('durak-dialog').close();cancelForcedMove();if(room)rememberRoom(room.code);document.body.classList.remove('in-room');clearThousand();document.querySelector('.intro').hidden=false;room=undefined;$('room').hidden=true;$('lobby').hidden=false;$('lobby-tools').hidden=false;$('resume-table').hidden=!localStorage.getItem(roomKey());try{window.Telegram?.WebApp?.BackButton?.hide?.();window.Telegram?.WebApp?.disableClosingConfirmation?.();}catch{} }
 function signedIn(player){me=player;const old=stored(pendingKey())??(()=>{try{return JSON.parse(sessionStorage.getItem('pending-command')||'null');}catch{return null;}})();if(old?.actor===me.id)setPending(old);$('identity').textContent=player.name;$('login').hidden=true;$('lobby').hidden=false;$('lobby-tools').hidden=false;}
 async function command(action) {
   if(pending && (pending.code!==room.code || JSON.stringify(pending.action)!==JSON.stringify(action))) throw new Error('Retry the previous move before sending a different one.');
@@ -70,7 +70,7 @@ function render(next) {
   if(room?.code===next.code && next.game.startsWith('durak-') && deferDurakRender(next,render))return;
   if(room?.code===next.code && next.version<room.version)next=room;
   if(next!==room&&next.table?.serverNow)serverOffset=next.table.serverNow-Date.now();
-  room=next;document.body.classList.add('in-room');
+  room=next;if(!room.game.startsWith('durak-')){document.getElementById('durak-dialog').close();document.getElementById('durak-hand-options')?.remove();}document.body.classList.add('in-room');
   if(room.game.startsWith('durak-'))$('room').dataset.presentation=room.table?.phase??room.phase;
   $('room').dataset.phase=room.table?.phase??room.phase;$('room').dataset.version=String(room.version);$('room').dataset.game=room.game;
   document.querySelector('.intro').hidden=true;rememberRoom(room.code);$('resume-table').hidden=true;try{window.Telegram?.WebApp?.enableClosingConfirmation?.();window.Telegram?.WebApp?.BackButton?.show?.();}catch{}$('room').dataset.playerCount=String(room.players.length);$('lobby').hidden=true;$('lobby-tools').hidden=true;$('room').hidden=false;

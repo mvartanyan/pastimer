@@ -1,4 +1,38 @@
-const catalog=`Podkidnoy Durak|Подкидной дурак|Durak mit Nachwerfen|Durak con descarte
+const catalog=`You|Вы|Du|Tú
+Options|Настройки|Optionen|Opciones
+Cancel|Отмена|Abbrechen|Cancelar
+Hand options|Настройки руки|Handoptionen|Opciones de la mano
+Close Durak options|Закрыть настройки дурака|Durak-Optionen schließen|Cerrar opciones de Durak
+Throw-in requests|Запросы на подкидывание|Nachwerf-Anfragen|Solicitudes para añadir
+Choose a rank|Выберите достоинство|Wert wählen|Elige un valor
+Allow a request, or close this and keep playing.|Разрешите запрос или закройте окно и продолжайте игру.|Erlaube eine Anfrage oder schließe das Fenster und spiele weiter.|Permite una solicitud o cierra y sigue jugando.
+No pending requests.|Нет ожидающих запросов.|Keine offenen Anfragen.|No hay solicitudes pendientes.
+I want to throw in|Хочу подкинуть|Ich möchte nachwerfen|Quiero añadir
+Cards in this attack appear here.|Здесь будут карты текущей атаки.|Hier erscheinen die Angriffskarten.|Aquí aparecen las cartas del ataque.
+The host can start a rematch.|Создатель стола может начать новую партию.|Der Gastgeber kann eine neue Partie starten.|El anfitrión puede iniciar la revancha.
+Tap a matching card to pass the attack on.|Нажмите карту того же достоинства, чтобы перевести атаку.|Tippe eine passende Karte an, um weiterzugeben.|Toca una carta del mismo valor para transferir.
+Choose matching cards|Выберите карты одного достоинства|Gleiche Werte wählen|Elige cartas del mismo valor
+Tap cards of one rank, then Attack.|Выберите карты одного достоинства и нажмите "Ходить".|Wähle Karten gleichen Werts und dann Angreifen.|Elige cartas del mismo valor y pulsa Atacar.
+You are taking.|Вы берёте карты.|Du nimmst auf.|Recoges las cartas.
+Wait for the attackers to finish.|Дождитесь окончания подкидывания.|Warte, bis die Angreifer fertig sind.|Espera a que terminen de añadir.
+Your defence|Вам отбиваться|Du verteidigst|Te toca defender
+Beat {card}. Tap a highlighted card or Take.|Отбейте {card}. Нажмите выделенную карту или "Беру".|Wehre {card} ab. Tippe eine helle Karte oder Nehmen an.|Defiende {card}. Toca una carta resaltada o Recoger.
+Take the cards to continue.|Нажмите "Беру", чтобы продолжить.|Nimm die Karten auf, um fortzufahren.|Recoge las cartas para continuar.
+Throw in or finish|Подкиньте или завершите|Nachwerfen oder beenden|Añade o termina
+Your attack|Вам ходить|Du greifst an|Te toca atacar
+Tap a highlighted card or Done throwing in.|Нажмите выделенную карту или "Больше не подкидываю".|Tippe eine helle Karte oder Nicht weiter nachwerfen an.|Toca una carta resaltada o No añadir más.
+Tap any card to start. Options lets you play several.|Нажмите любую карту. Для нескольких карт откройте настройки.|Tippe eine Karte an. Unter Optionen kannst du mehrere wählen.|Toca una carta. En Opciones puedes elegir varias.
+Finish your turn|Завершите свой ход|Zug beenden|Termina tu turno
+Press Done throwing in to continue.|Нажмите "Больше не подкидываю", чтобы продолжить.|Tippe Nicht weiter nachwerfen an, um fortzufahren.|Pulsa No añadir más para continuar.
+Request sent|Запрос отправлен|Anfrage gesendet|Solicitud enviada
+Waiting for {player} to allow your rank.|Ждём разрешения от {player}.|Warte auf die Erlaubnis von {player}.|Esperando el permiso de {player}.
+You are out|Вы вышли из игры|Du bist fertig|Has terminado
+The other players are finishing.|Остальные игроки заканчивают.|Die anderen spielen zu Ende.|Los demás están terminando.
+Waiting for {player}|Ожидаем: {player}|Warten auf {player}|Esperando a {player}
+Ask to throw in using the button below.|Чтобы подкинуть, нажмите кнопку ниже.|Frage mit der Taste unten nach.|Solicita añadir con el botón de abajo.
+Permission granted. Wait for your turn.|Разрешение получено. Дождитесь своего хода.|Erlaubnis erteilt. Warte auf deinen Zug.|Permiso concedido. Espera tu turno.
+Playable cards will light up on your turn.|В ваш ход доступные карты будут выделены.|Spielbare Karten leuchten bei deinem Zug auf.|Las cartas jugables se resaltan en tu turno.
+Podkidnoy Durak|Подкидной дурак|Durak mit Nachwerfen|Durak con descarte
 Perevodnoy Durak|Переводной дурак|Durak mit Weitergeben|Durak con transferencia
 Computer opponents|Компьютерные соперники|Computergegner|Rivales del ordenador
 2 seats|2 места|2 Plätze|2 plazas
