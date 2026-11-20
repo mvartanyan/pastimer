@@ -219,6 +219,9 @@ mod tests {
     }
     fn view(hand: Vec<Card>) -> View {
         View {
+            can_trust_dealer: false,
+            trust_dealer: false,
+            dealer_hands: vec![],
             trick_leader: None,
             trick_winner: None,
             announcing_card: None,

@@ -1,4 +1,4 @@
-import {playingCard,cardBack,cardName} from '/cards.js';
+import {playingCard,cardBack,cardName,sortedHand} from '/cards.js';
 const $=id=>document.getElementById(id);
 const node=(tag,text='',className='')=>{const e=document.createElement(tag);e.textContent=text;if(className)e.className=className;return e;};
 const symbols={H:'♥',D:'♦',C:'♣',S:'♠'};
@@ -93,6 +93,32 @@ function cardOptions(card,{room,me,send,run}){
     await send({type:'play',card:code,announce:false});dialog.close();
   });if(!dialog.open)dialog.showModal();
 }
+const signed=n=>`${n>=0?'+':''}${n}`;
+function scoreLines(last,player){
+  const delta=last.after[player]-last.before[player],b=last.breakdown?.[player];
+  if(!b||!b.marriages.length&&!b.dealerBonus)return {equation:signed(delta),adjustment:''};
+  const parts=[b.trickPoints,...b.marriages.map(m=>m.points)];if(b.dealerBonus)parts.push(b.dealerBonus);
+  const equation=`${parts.join('+')}=${b.rawPoints===delta?signed(delta):b.rawPoints}`;
+  const label={contract:`Contract ${last.contract?.order??''}`,barrel:'Barrel',limit:'Barrel limit',cancelled:'Deal cancelled',dismissed:'Deal dismissed'}[b.adjustment]??'Score adjustment';
+  return {equation,adjustment:b.rawPoints===delta?'':`${label}: ${signed(delta)}`};
+}
+let observerScope='',observerHands=new Map();
+function renderDealerHands(room,sortMode){
+  const observed=room.table.dealerHands?.[0],watch=!!observed;
+  $('room').classList.toggle('dealer-observing',watch);
+  $('hand-zone').querySelector('h3').firstChild.textContent=watch?`Watching ${room.players.find(p=>p.id===observed.player)?.name??observed.player} `:'Your hand ';
+  if(!watch)return;
+  const count=observed.cards?.length??room.table.seats.find(p=>p.id===observed.player)?.count??0;
+  $('hand-count').textContent=`${count} cards`;$('sort-hand').style.visibility=observed.cards?'visible':'hidden';
+  const key=`${room.id}:${room.table.deal}:${observed.player}:${sortMode}`,cards=observed.cards?sortedHand(observed.cards,sortMode,room.game):null;
+  const scope=`${room.id}:${room.table.deal}`;if(scope!==observerScope){observerScope=scope;observerHands.clear();}
+  let observerSlots=observerHands.get(key)??[];if(cards?.some(c=>!observerSlots.includes(c))){observerSlots=[...cards,...Array(Math.max(0,10-cards.length)).fill(null)];observerHands.set(key,observerSlots);}
+  const hand=$('hand');hand.dataset.observedPlayer=observed.player;hand.setAttribute('aria-label',observed.cards?'Dealer view - read only':'Private hand');
+  hand.replaceChildren(...Array.from({length:10},(_,i)=>{const slot=node('div','','hand-slot');slot.dataset.slot=String(i);const code=observerSlots[i];
+    if(cards&&code&&cards.includes(code)){const card=playingCard(code);card.classList.add('observer-card');card.setAttribute('role','img');card.setAttribute('aria-description','Dealer view - read only');const legal=observed.legalCards?.includes(code),playing=room.table.phase==='trick';card.classList.toggle('is-playable',playing&&legal);card.classList.toggle('is-unplayable',playing&&!legal);card.classList.toggle('announces-marriage',!!observed.announceCards?.includes(code));slot.append(card);}
+    else if(!cards&&i<count){const back=cardBack();back.classList.add('observer-card');slot.append(back);}
+    else{const pale=node('span','','card-placeholder');pale.setAttribute('aria-hidden','true');slot.append(pale);}return slot;}));
+}
 function marriageRings(extra=''){
   const rings=node('span','',`marriage-rings ${extra}`.trim()),id=`ring-metal-${++ringsId}`;rings.setAttribute('aria-hidden','true');
   rings.innerHTML=`<svg viewBox="0 0 68 48" fill="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0bc"/><stop offset=".4" stop-color="#e9bb57"/><stop offset=".72" stop-color="#b37a20"/><stop offset="1" stop-color="#ffe6a0"/></linearGradient><mask id="${id}-under" maskUnits="userSpaceOnUse" x="0" y="0" width="68" height="48"><rect width="68" height="48" fill="white"/><path d="M62 24a18 18 0 1 1-36 0a18 18 0 1 1 36 0" stroke="black" stroke-width="8" fill="none"/></mask></defs><circle cx="24" cy="24" r="18" stroke="url(#${id})" stroke-width="4.5" mask="url(#${id}-under)"/><circle cx="44" cy="24" r="18" stroke="url(#${id})" stroke-width="4.5"/></svg>`;
@@ -123,7 +149,7 @@ export function layoutTrick(){
     }
   }
 }
-export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,now}){
+export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,now,sortMode}){
   clearTimeout(timer);prepare(room);current={room,me,now};const t=room.table,c=t.controls;
   if($('card-options-dialog').open&&(cardOption?.room!==room.id||cardOption.version!==room.version||t.turn!==me.id))$('card-options-dialog').close();
   if(openPile&&(openPile.room!==room.id||openPile.deal!==t.deal)){if($('inspector').open)$('inspector').close();openPile=null;}
@@ -162,9 +188,12 @@ export function renderThousand({room,me,send,sendPlatform,refresh,run,repaint,no
     center.append(trick);
   }else if(t.lastDeal){
     const summary=node('div','','deal-summary');summary.append(node('span',`DEAL ${t.lastDeal.deal} - ${t.lastDeal.status.toUpperCase()}`,'eyebrow'),node('h2',phase==='finished'?'Game won!':'One more hand?'));
-    const highest=Math.max(...Object.values(t.lastDeal.after)),scores=node('div','','result-scores');for(const p of room.players){const d=t.lastDeal.after[p.id]-t.lastDeal.before[p.id],column=node('div','','result-score');const number=node('strong',String(t.lastDeal.after[p.id]));if(phase==='finished'&&t.lastDeal.after[p.id]===highest){column.classList.add('match-winner');number.classList.add('laurel-score');const wreath=node('span','','laurel-wreath');wreath.setAttribute('aria-hidden','true');wreath.innerHTML='<svg viewBox="0 0 120 90" fill="none" stroke="#e5bc73" stroke-width="2"><path d="M51 82Q9 68 17 19M69 82Q111 68 103 19"/>'+[0,1,2,3,4].map(i=>`<ellipse cx="${15+i*3}" cy="${25+i*11}" rx="5" ry="10" transform="rotate(-40 ${15+i*3} ${25+i*11})" fill="#d9b365"/><ellipse cx="${105-i*3}" cy="${25+i*11}" rx="5" ry="10" transform="rotate(40 ${105-i*3} ${25+i*11})" fill="#d9b365"/>`).join('')+'</svg>';number.append(wreath);}column.append(node('span',p.name),number,node('small',`${d>=0?'+':''}${d}`));scores.append(column);}summary.append(scores);center.append(summary);
+    const highest=Math.max(...Object.values(t.lastDeal.after)),scores=node('div','','result-scores'),resultPlayers=phase==='finished'?[...room.players].sort((a,b)=>Number(t.lastDeal.after[b.id]===highest)-Number(t.lastDeal.after[a.id]===highest)):room.players;for(const p of resultPlayers){const column=node('div','','result-score');const number=node('strong',String(t.lastDeal.after[p.id]));number.setAttribute('aria-label',`New score ${t.lastDeal.after[p.id]}`);if(phase==='finished'&&t.lastDeal.after[p.id]===highest){column.classList.add('match-winner');number.classList.add('laurel-score');const wreath=node('span','','laurel-wreath');wreath.setAttribute('aria-hidden','true');wreath.innerHTML='<svg viewBox="0 0 120 90" preserveAspectRatio="none" fill="none" stroke="#e5bc73" stroke-width="2"><path d="M51 82Q9 68 17 19M69 82Q111 68 103 19"/>'+[0,1,2,3,4].map(i=>`<ellipse cx="${15+i*3}" cy="${25+i*11}" rx="5" ry="10" transform="rotate(-40 ${15+i*3} ${25+i*11})" fill="#d9b365"/><ellipse cx="${105-i*3}" cy="${25+i*11}" rx="5" ry="10" transform="rotate(40 ${105-i*3} ${25+i*11})" fill="#d9b365"/>`).join('')+'</svg>';number.append(wreath);}const lines=scoreLines(t.lastDeal,p.id),previous=node('span',String(t.lastDeal.before[p.id]),'previous-score');previous.setAttribute('aria-label',`Previous score ${t.lastDeal.before[p.id]}`);const label=node('button',p.name,'result-player');label.type='button';label.disabled=!t.piles?.find(pile=>pile.player===p.id)?.top;label.setAttribute('aria-label',`Last trick won by ${p.name}`);label.onclick=()=>inspectTrick(room,p.id);column.append(label,previous,node('span',lines.equation,'score-equation'));if(lines.adjustment)column.append(node('span',lines.adjustment,'score-adjustment'));column.append(number);scores.append(column);}summary.append(scores);center.append(summary);
   }else center.append(node('p','A fresh deck.','table-instruction'));
   $('thousand-table').append(center);
+  renderDealerHands(room,sortMode);
+  $('room').classList.toggle('showing-deal-results',['awaitShuffle','finished'].includes(t.phase)&&!!t.lastDeal);
+  if(t.canTrustDealer){const trust=node('button',t.trustDealer?'Dealer trusted for this deal':'Trust dealer for this deal','secondary trust-dealer');trust.type='button';trust.setAttribute('aria-pressed',String(!!t.trustDealer));trust.onclick=()=>run(()=>sendPlatform({type:'dealerTrust',trusted:!t.trustDealer}));$('game-actions').append(trust);}
   if(c.shuffle)$('game-actions').append(btn(t.deal?'Shuffle & deal next hand':'Shuffle & deal',{type:'shuffle'}));
   else if(t.phase==='awaitShuffle'&&room.computers?.includes(t.dealer)){const deal=node('button',t.deal?'Ask computer to deal next hand':'Ask computer to deal');deal.type='button';deal.onclick=()=>run(()=>sendPlatform({type:'computerDeal'}));$('game-actions').append(deal);}
   if(c.fourNines){const nines=btn('9×4',{type:'fourNines'},true);nines.setAttribute('aria-label','Four nines');$('game-actions').append(nines);}

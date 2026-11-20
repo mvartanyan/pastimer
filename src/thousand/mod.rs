@@ -218,6 +218,19 @@ pub struct DealRecord {
     pub marriages: Vec<Marriage>,
     pub dealer_bonus: u16,
 }
+impl DealRecord {
+    pub fn breakdown(&self) -> BTreeMap<String, Value> {
+        self.before.totals.keys().map(|id|{
+            let tricks:u16=self.tricks.iter().filter(|t|&t.winner==id).map(|t|t.points).sum();
+            let marriages:Vec<_>=self.marriages.iter().filter(|m|&m.player==id).map(|m|json!({"suit":m.suit,"points":m.suit.marriage()})).collect();
+            let bonus=if &self.dealer==id{self.dealer_bonus}else{0};
+            let raw=tricks+marriages.iter().filter_map(|m|m["points"].as_u64()).sum::<u64>() as u16+bonus;
+            let delta=self.after.get(id)-self.before.get(id);
+            let adjustment=if delta==i64::from(raw){None}else if self.status!="completed"{Some(self.status.as_str())}else if self.contract.as_ref().is_some_and(|c|&c.player==id){Some("contract")}else if self.barrel_players.contains(id){Some("barrel")}else{Some("limit")};
+            (id.clone(),json!({"trickPoints":tricks,"marriages":marriages,"dealerBonus":bonus,"rawPoints":raw,"delta":delta,"adjustment":adjustment}))
+        }).collect()
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct State {
     pub settings: Settings,

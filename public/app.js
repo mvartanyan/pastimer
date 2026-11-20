@@ -60,7 +60,7 @@ function renderSeats(){
     const box=element('div','',`seat ${position}${isTurn?' is-turn':''}${pile?.top?' has-trick':''}${room.table?.trickLeader===p.id?' is-leader':''}${room.table?.trickWinner===p.id?' is-taking':''}`);box.dataset.player=p.id;if(pile?.top){box.title=`Inspect the last trick won by ${p.name}`;box.onclick=e=>{if(!box.dataset.recipient&&!e.target.closest('.seat-hand'))inspectTrick(room,p.id);};}
     const avatar=element('span',room.computers?.includes(p.id)?'C':p.name.trim().slice(0,1).toUpperCase(),'avatar');avatar.style.setProperty('--avatar-color',colors[index%colors.length]);
     const info=element('div','','seat-info');const name=element('div','','seat-name'),barrel=element('span','','barrel-marker');barrel.setAttribute('role','img');barrel.setAttribute('aria-label','On the barrel');barrel.style.visibility=seat?.onBarrel?'visible':'hidden';barrel.innerHTML='<svg viewBox="0 0 20 26" aria-hidden="true"><path d="M5 3Q0 13 5 23Q10 27 15 23Q20 13 15 3Z" fill="#936638" stroke="#e5bc73" stroke-width="1.6"/><path d="M3 7H17M2 18H18M8 3Q5 13 8 24M12 3Q15 13 12 24" fill="none" stroke="#e5bc73" stroke-width="1.4"/><ellipse cx="10" cy="3" rx="5" ry="2" fill="#bd8b4e" stroke="#e5bc73"/></svg>';name.append(element('span',p.name+(isMe?' - you':''),'player-name'),barrel);info.append(name);
-    const score=element('div','','seat-score');const inDeal=room.table?.kind==='thousand'&&!['awaitShuffle','finished'].includes(room.table.phase);score.title=inDeal?`Deal points: ${seat?.roundPoints??0}; match score: ${seat?.score??0}`:'Match score';score.append(element('strong',String(inDeal?(seat?.roundPoints??0):(seat?.score??room.scores[p.id]??0))),element('span','pts','score-kind'));
+    const score=element('div','','seat-score');const inDeal=room.table?.kind==='thousand';score.title=inDeal?'Trick points':'Match score';score.append(element('strong',String(inDeal?(seat?.trickPoints??0):(seat?.score??room.scores[p.id]??0))),element('span','pts','score-kind'));
     if(seat){const hand=element('button','','seat-hand');hand.type='button';hand.disabled=!pile?.top;hand.setAttribute('aria-label',`Last trick won by ${p.name}`);hand.dataset.pilePlayer=p.id;hand.append(cardBack(),element('span',String(seat.count)));if(pile?.top)hand.append(element('span','↗','pile-available'));hand.onclick=()=>inspectTrick(room,p.id);score.append(hand);}
     if(seat?.sticks)score.append(element('span','Ⅰ'.repeat(seat.sticks),'stick-marks'));
     info.append(score);const contract=room.table?.contractor===p.id?`CONTRACT ${room.table.order}`:'',role=contract||(seat?.role==='dealer'?'DEALER':isTurn&&!room.table?.trickLeader?'TURN':'');info.append(element('span',role,'seat-role'));box.append(avatar,info);if(room.table?.trickWinner===p.id)box.append(element('span','TAKES TRICK','seat-activity'));else if(room.table?.trickLeader===p.id)box.append(element('span','LEAD','seat-activity'));return box;
@@ -79,11 +79,13 @@ function render(next) {
   $('marriage-options').hidden=room.game.startsWith('durak-');$('hand').classList.toggle('durak-hand',room.game.startsWith('durak-'));
   if(!room.game.startsWith('durak-'))$('hand').onpointerdown=null;
   $('thousand-table').classList.remove('durak-table');
+  if(room.table?.kind!=='thousand'){$('room').classList.remove('dealer-observing','showing-deal-results');$('hand-zone').querySelector('h3').firstChild.textContent='Your hand ';}
   renderSeats();clearThousand();$('table-actions').replaceChildren();$('game-actions').replaceChildren();if(room.table?.kind!=='durak')$('thousand-table').replaceChildren();
   $('phase').textContent={lobby:'Invite your friends. Share the table code.',committing:'The deck is committed. Confirm to start the demo.',playing:`Round ${room.table?.round??''} · choose your card.`,finished:'Game complete. The record is ready to verify.'}[room.phase];
   if(pending&&pending.code===room.code)$('table-actions').append(button('Retry previous move',()=>command(pending.action),'secondary'));
   if(room.phase==='lobby'&&room.host===me.id){const start=button('Start game',()=>command({type:'start'}));start.disabled=room.players.length<(room.options?.playerCount??2);$(room.game.startsWith('durak-')?'game-actions':'table-actions').append(start);}
   if(room.phase==='committing'&&!room.deck.acknowledgements.includes(me.id))$('table-actions').append(button('Save & acknowledge deck',async()=>{saveReceipt();await command({type:'acknowledge',shuffleId:room.deck.shuffleId,commitment:room.deck.commitment});}));
+  $('hand').removeAttribute('data-observed-player');$('hand').setAttribute('aria-label','Your cards - tap to play');
   const gifts=room.table?.kind==='thousand'?incoming(room,me):[],held=new Set(gifts.map(g=>g.card));
   const chosen=room.table?.kind==='thousand'?selectedTransfers(room):[];
   const hand=sortedHand((room.table?.hand??[]).filter(c=>!held.has(c)&&!chosen.includes(c)),sortMode,room.game);
@@ -97,7 +99,7 @@ function render(next) {
 
   if(room.phase==='playing')for(const action of room.table?.actions??[]){if(action.input==='card')continue;$('game-actions').append(button(action.label,()=>command({type:action.type})));}
   if(room.table?.kind==='thousand'){
-    renderThousand({room,me,send:action=>command({type:'thousand',action}),refresh:refreshRoom,sendPlatform:action=>command(action),run,repaint,now:()=>Date.now()+serverOffset});
+    renderThousand({room,me,send:action=>command({type:'thousand',action}),refresh:refreshRoom,sendPlatform:action=>command(action),run,repaint,now:()=>Date.now()+serverOffset,sortMode});
     for(const card of $('hand').querySelectorAll('.card')){card.disabled=gifts.length>0||(!room.table.controls.recipients.length&&!room.table.controls.legalCards.includes(card.dataset.card));card.classList.toggle('is-unplayable',room.table.phase==='trick'&&room.table.turn===me.id&&card.disabled);card.classList.toggle('is-playable',room.table.controls.legalCards.includes(card.dataset.card)&&!card.disabled);}
     bindDistributionDrag({room,repaint});
     if(room.table.phase==='finished'){const again=button('New table',lobby);const history=button('Played games',()=>archive.showArchive(),'secondary');$('game-actions').replaceChildren(again,history);}

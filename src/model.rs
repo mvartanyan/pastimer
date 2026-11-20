@@ -109,6 +109,9 @@ pub enum Action {
     },
     Start,
     ComputerDeal,
+    DealerTrust {
+        trusted: bool,
+    },
     Acknowledge {
         #[serde(rename = "shuffleId")]
         shuffle_id: u32,
@@ -218,8 +221,16 @@ pub struct Event {
     pub hash: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DealerConsent {
+    pub deal: u32,
+    pub dealer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Room {
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub dealer_trust: BTreeMap<String, DealerConsent>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub durak_options: Option<crate::durak::Settings>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

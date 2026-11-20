@@ -431,3 +431,137 @@ async fn cancelled_deal_reveals_and_replays_its_complete_initial_deck() -> TestR
     assert!(audit["decks"][1].get("proof").is_none());
     Ok(())
 }
+
+#[tokio::test]
+async fn dealer_trust_requires_own_predeal_consent_and_resets_and_replays() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let path = temp.path().join("trust.sqlite");
+    let path = path.to_str().ok_or("path")?;
+    let (e, code) = setup(path, 4).await?;
+    let room = e.read(&code, "p0").await?;
+    let dealer = text(&room["table"]["dealer"])?.to_owned();
+    let humans: Vec<_> = (0..4)
+        .map(|i| format!("p{i}"))
+        .filter(|p| p != &dealer)
+        .collect();
+    let granted = &humans[0];
+    let trust = |trusted| Action::DealerTrust { trusted };
+    async fn privacy(e: &Engine, code: &str, actor: &str, action: Action) -> Result<Value> {
+        let v = e.read(code, actor).await?["version"]
+            .as_u64()
+            .ok_or_else(Error::internal)?;
+        e.command(
+            code,
+            actor,
+            Command {
+                version: v,
+                request_id: Uuid::new_v4().to_string(),
+                action,
+            },
+        )
+        .await
+    }
+    assert!(privacy(&e, &code, &dealer, trust(true)).await.is_err());
+    assert_eq!(e.read(&code, granted).await?["table"]["trustDealer"], false);
+    privacy(&e, &code, granted, trust(true)).await?;
+    assert_eq!(e.read(&code, granted).await?["table"]["trustDealer"], true);
+    privacy(&e, &code, granted, trust(false)).await?;
+    assert_eq!(e.read(&code, granted).await?["table"]["trustDealer"], false);
+    privacy(&e, &code, granted, trust(true)).await?;
+    let restarted = Engine::new(Store::open(path).await?);
+    assert_eq!(
+        restarted.read(&code, granted).await?["table"]["trustDealer"],
+        true
+    );
+    let mut room = prepare(&restarted, &code).await?;
+    let watch = restarted.read(&code, &dealer).await?;
+    let hands = watch["table"]["dealerHands"].as_array().ok_or("hands")?;
+    assert_eq!(hands.len(), 1);
+    for hand in hands {
+        if hand["player"] == *granted {
+            assert_eq!(
+                hand["cards"],
+                restarted.read(&code, granted).await?["table"]["hand"]
+            );
+        } else {
+            assert!(hand["cards"].is_null());
+        }
+    }
+    for actor in &humans {
+        assert_eq!(
+            restarted.read(&code, actor).await?["table"]["dealerHands"],
+            json!([])
+        );
+        assert!(
+            privacy(&restarted, &code, actor, trust(true))
+                .await
+                .is_err()
+        );
+    }
+    for _ in 0..24 {
+        let actor = text(&room["table"]["turn"])?.to_owned();
+        let own = restarted.read(&code, &actor).await?;
+        let spectator = restarted.read(&code, &dealer).await?;
+        let current = &spectator["table"]["dealerHands"][0];
+        assert_eq!(current["player"], actor);
+        if &actor == granted {
+            assert_eq!(current["cards"], own["table"]["hand"]);
+            assert_eq!(
+                current["legalCards"],
+                own["table"]["controls"]["legalCards"]
+            );
+        } else {
+            assert!(current["cards"].is_null());
+            assert_eq!(current["legalCards"], json!([]));
+        }
+        let card = text(&own["table"]["controls"]["legalCards"][0])?.parse()?;
+        room = cmd(
+            &restarted,
+            &code,
+            &actor,
+            thousand::Action::Play {
+                card,
+                announce: false,
+            },
+        )
+        .await?;
+        if room["table"]["phase"] == "closing" {
+            restarted
+                .advance_at(
+                    &code,
+                    "p0",
+                    room["table"]["closeAt"].as_i64().ok_or("close")?,
+                )
+                .await?;
+            room = restarted.read(&code, "p0").await?;
+        }
+    }
+    assert_eq!(room["table"]["phase"], "awaitShuffle");
+    for actor in &humans {
+        assert_eq!(
+            restarted.read(&code, actor).await?["table"]["trustDealer"],
+            false
+        );
+    }
+    let audit = restarted.audit(&code, "p0").await?;
+    assert_eq!(audit::verify(&audit)?["deals"], 1);
+    let mut forged = audit.clone();
+    let events = forged["events"].as_array_mut().ok_or("events")?;
+    let event = events
+        .iter_mut()
+        .find(|e| e["type"] == "dealer.trust.changed")
+        .ok_or("trust event")?;
+    event["data"]["dealer"] = json!(granted);
+    // Rehashing cannot make invalid consent legal during replay.
+    let mut previous = "0".repeat(64);
+    for e in events {
+        e["previousHash"] = json!(previous);
+        let mut body = e.clone();
+        body.as_object_mut().ok_or("event")?.remove("hash");
+        let hash = pastimer::crypto::hash(&body)?;
+        e["hash"] = json!(hash);
+        previous = hash;
+    }
+    assert!(audit::verify(&forged).is_err());
+    Ok(())
+}

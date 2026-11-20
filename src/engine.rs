@@ -61,11 +61,17 @@ impl Engine {
         result: Outcome<crate::thousand::State>,
         actor: &str,
     ) -> Result<()> {
+        let reset = matches!(&result,Outcome::Continue{state,..} if matches!(state.phase,crate::thousand::Phase::AwaitShuffle))
+            || matches!(&result, Outcome::Finished { .. });
         Self::transition(
             room,
             result.map(|s| GameState::Thousand(Box::new(s))),
             actor,
-        )
+        )?;
+        if reset {
+            room.dealer_trust.clear();
+        }
+        Ok(())
     }
     pub fn durak_outcome(
         room: &mut Room,
@@ -257,6 +263,7 @@ impl Engine {
             }
         };
         let mut room = Room {
+            dealer_trust: BTreeMap::new(),
             durak_options,
             computer_due_at: None,
             computers: vec![],
@@ -399,6 +406,44 @@ impl Engine {
                         )?;
                     }
                 }
+            }
+            Action::DealerTrust { trusted } => {
+                let Some(GameState::Thousand(state)) = room.lifecycle.state() else {
+                    return Err(Error::bad(
+                        "Trust is only available before a four-player Thousand deal",
+                    ));
+                };
+                let dealer = room
+                    .players
+                    .get(state.dealer)
+                    .ok_or_else(Error::internal)?
+                    .id
+                    .clone();
+                ensure(
+                    room.players.len() == 4
+                        && matches!(state.phase, crate::thousand::Phase::AwaitShuffle)
+                        && actor != dealer
+                        && !room.computers.iter().any(|p| p == actor || p == &dealer),
+                    Error::bad("Trust is only available before a four-player Thousand deal"),
+                )?;
+                let deal = state.deal + 1;
+                if *trusted {
+                    room.dealer_trust.insert(
+                        actor.into(),
+                        DealerConsent {
+                            deal,
+                            dealer: dealer.clone(),
+                        },
+                    );
+                } else {
+                    room.dealer_trust.remove(actor);
+                }
+                Self::event(
+                    room,
+                    actor,
+                    "dealer.trust.changed",
+                    json!({"player":actor,"dealer":dealer,"deal":deal,"trusted":trusted}),
+                )?;
             }
             Action::ComputerDeal => {
                 ensure(
@@ -811,21 +856,39 @@ impl Engine {
     }
     pub fn view(room: &Room, viewer: &str) -> Result<Value> {
         Self::compatible(room)?;
-        let table =
-            match room.lifecycle.state() {
-                None => None,
-                Some(GameState::HighCard(state)) => Some(TableView::HighCard(HighCard::view(
-                    state,
-                    viewer,
-                    &room.players,
-                ))),
-                Some(GameState::Durak(state)) => Some(TableView::Durak(Box::new(
-                    state.view(viewer, &room.players),
-                ))),
-                Some(GameState::Thousand(state)) => Some(TableView::Thousand(Box::new(
-                    state.view(viewer, &room.players, Utc::now().timestamp_millis()),
-                ))),
-            };
+        let table = match room.lifecycle.state() {
+            None => None,
+            Some(GameState::HighCard(state)) => Some(TableView::HighCard(HighCard::view(
+                state,
+                viewer,
+                &room.players,
+            ))),
+            Some(GameState::Durak(state)) => Some(TableView::Durak(Box::new(
+                state.view(viewer, &room.players),
+            ))),
+            Some(GameState::Thousand(state)) => {
+                let mut view = state.view(viewer, &room.players, Utc::now().timestamp_millis());
+                let dealer = room
+                    .players
+                    .get(state.dealer)
+                    .ok_or_else(Error::internal)?
+                    .id
+                    .as_str();
+                view.can_trust_dealer = room.players.len() == 4
+                    && matches!(state.phase, crate::thousand::Phase::AwaitShuffle)
+                    && viewer != dealer
+                    && !room.computers.iter().any(|p| p == viewer || p == dealer);
+                let consent_deal = state.deal
+                    + u32::from(matches!(state.phase, crate::thousand::Phase::AwaitShuffle));
+                view.trust_dealer = room
+                    .dealer_trust
+                    .get(viewer)
+                    .is_some_and(|c| c.deal == consent_deal && c.dealer == dealer);
+                view.dealer_hands =
+                    state.dealer_hands(viewer, &room.players, &room.computers, &room.dealer_trust);
+                Some(TableView::Thousand(Box::new(view)))
+            }
+        };
         let deck = room.decks.last().map(|d| DeckView {
             shuffle_id: d.proof.shuffle_id,
             commitment: d.commitment.clone(),

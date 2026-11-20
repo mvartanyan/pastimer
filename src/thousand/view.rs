@@ -4,6 +4,9 @@ use super::*;
 #[serde(rename_all = "camelCase")]
 pub struct View {
     pub kind: &'static str,
+    pub can_trust_dealer: bool,
+    pub trust_dealer: bool,
+    pub dealer_hands: Vec<DealerHand>,
     pub phase: &'static str,
     pub deal: u32,
     pub dealer: String,
@@ -29,6 +32,14 @@ pub struct View {
     pub played_cards: Vec<Card>,
     pub last_deal: Option<Value>,
     pub audit_deals: usize,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DealerHand {
+    pub player: String,
+    pub cards: Option<Vec<Card>>,
+    pub legal_cards: Vec<Card>,
+    pub announce_cards: Vec<Card>,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,6 +86,54 @@ pub struct Controls {
     pub announce_cards: Vec<Card>,
 }
 impl State {
+    pub fn dealer_hands(
+        &self,
+        viewer: &str,
+        players: &[Player],
+        computers: &[String],
+        trust: &std::collections::BTreeMap<String, crate::model::DealerConsent>,
+    ) -> Vec<DealerHand> {
+        if players.len() != 4
+            || players.get(self.dealer).is_none_or(|p| p.id != viewer)
+            || computers.iter().any(|p| p == viewer)
+            || matches!(self.phase, Phase::AwaitShuffle | Phase::Finished)
+        {
+            return vec![];
+        }
+        let actor = match &self.phase {
+            Phase::Auction(a) => Some(a.turn),
+            Phase::Stock | Phase::Distribution | Phase::Preparation => self.contractor,
+            Phase::Trick { turn, .. } => Some(*turn),
+            Phase::Closing { trick, .. } => players.iter().position(|p| p.id == trick.winner),
+            _ => None,
+        };
+        actor
+            .and_then(|i| players.get(i))
+            .map(|p| {
+                let permitted = computers.contains(&p.id)
+                    || trust
+                        .get(&p.id)
+                        .is_some_and(|c| c.deal == self.deal && c.dealer == viewer);
+                let controls = self.view(&p.id, players, 0).controls;
+                DealerHand {
+                    player: p.id.clone(),
+                    cards: permitted.then(|| self.hands.get(&p.id).cloned().unwrap_or_default()),
+                    legal_cards: if permitted {
+                        controls.legal_cards
+                    } else {
+                        vec![]
+                    },
+                    announce_cards: if permitted {
+                        controls.announce_cards
+                    } else {
+                        vec![]
+                    },
+                }
+            })
+            .into_iter()
+            .collect()
+    }
+
     pub fn view(&self, viewer: &str, players: &[Player], now: i64) -> View {
         let actor = players.iter().position(|p| p.id == viewer);
         let mut controls = Controls {
@@ -157,13 +216,13 @@ impl State {
                     .any(|m| usize::from(m.trick) == number && m.player == play.player)
             })
             .map(|play| play.card.clone());
-        View{kind:"thousand",phase:self.phase.name(),deal:self.deal,dealer:players.get(self.dealer).map(|p|p.id.clone()).unwrap_or_default(),contractor:self.contractor.and_then(|p|players.get(p)).map(|p|p.id.clone()),order:self.order,compulsory:self.compulsory,
+        View{kind:"thousand",can_trust_dealer:false,trust_dealer:false,dealer_hands:vec![],phase:self.phase.name(),deal:self.deal,dealer:players.get(self.dealer).map(|p|p.id.clone()).unwrap_or_default(),contractor:self.contractor.and_then(|p|players.get(p)).map(|p|p.id.clone()),order:self.order,compulsory:self.compulsory,
             turn,hand:self.hands.get(viewer).cloned().unwrap_or_default(),stock:self.stock_visible.then(||self.stock.clone()),stock_taken:self.stock_taken,trump:self.trump,
             seats:players.iter().enumerate().map(|(i,p)|SeatView{player:p.clone(),count:self.hands.get(&p.id).map_or(0,Vec::len),score:self.ledger.get(&p.id),sticks:self.sticks.get(&p.id).copied().unwrap_or(0),on_barrel:self.ledger.get(&p.id)==i64::from(self.settings.barrel_threshold),round_points:self.raw.get(&p.id).copied().unwrap_or(0),trick_points:self.tricks.iter().filter(|t|t.winner==p.id).map(|t|t.points).sum(),role:if players.len()==4&&i==self.dealer{"dealer"}else if self.contractor==Some(i){"contractor"}else{"player"}}).collect(),
             piles:players.iter().map(|p|PileView{player:p.id.clone(),count:self.tricks.iter().filter(|t|t.winner==p.id).count(),top:self.tricks.iter().rev().find(|t|t.winner==p.id).cloned()}).collect(),plays,close_at,trick_leader,trick_winner,announcing_card,server_now:now,controls,
             transfers:self.movements.iter().filter_map(|m|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to)&& (m.public||from==viewer||to==viewer){return Some(Transfer{player:to.clone(),card:m.card.clone(),public:m.public})}None}).collect(),
             deliveries:self.movements.iter().enumerate().filter_map(|(id,m)|{if let (Zone::Hand{player:from},Zone::Hand{player:to})=(&m.from,&m.to){Some(Delivery{id,from:from.clone(),to:to.clone(),public:m.public,card:(m.public||from==viewer||to==viewer).then(||m.card.clone())})}else{None}}).collect(),
             played_cards:self.movements.iter().filter(|m|matches!(m.to,Zone::Table{..})).map(|m|m.card.clone()).collect(),
-            last_deal:self.archives.last().map(|r|json!({"deal":r.deal,"dealer":r.dealer,"status":r.status,"contract":r.contract,"before":r.before.totals,"after":r.after.totals,"sticks":r.sticks_after})),audit_deals:self.archives.len()}
+            last_deal:self.archives.last().map(|r|json!({"deal":r.deal,"dealer":r.dealer,"status":r.status,"contract":r.contract,"before":r.before.totals,"after":r.after.totals,"sticks":r.sticks_after,"breakdown":r.breakdown()})),audit_deals:self.archives.len()}
     }
 }

@@ -1,4 +1,22 @@
-const catalog=`You|Вы|Du|Tú
+const catalog=`
+Previous score {points}|Предыдущий счёт {points}|Vorheriger Punktestand {points}|Puntuación anterior {points}
+New score {points}|Новый счёт {points}|Neuer Punktestand {points}|Nueva puntuación {points}
+Watching {player}|Карты: {player}|Karten von {player}|Cartas de {player}
+Dealer view - read only|Просмотр сдающего: без права хода|Geberansicht: nur ansehen|Vista del repartidor: solo lectura
+Trick points|Очки во взятках|Stichpunkte|Puntos en bazas
+Dealer view|Карты игроков|Geberansicht|Vista del repartidor
+Private hand|Карты скрыты|Verdeckte Hand|Mano privada
+View {player}'s hand|Посмотреть карты: {player}|Karten von {player} ansehen|Ver cartas de {player}
+{player}'s hand|Карты: {player}|Karten von {player}|Cartas de {player}
+Trust dealer for this deal|Доверить карты сдающему|Dem Geber Karten zeigen|Confiar cartas al repartidor
+Dealer trusted for this deal|Карты доверены сдающему|Geber darf Karten sehen|Cartas confiadas al repartidor
+Contract {n}: {points}|Заказ {n}: {points}|Gebot {n}: {points}|Contrato {n}: {points}
+Barrel: {points}|Бочка: {points}|Fass: {points}|Barril: {points}
+Barrel limit: {points}|Порог бочки: {points}|Fassgrenze: {points}|Límite del barril: {points}
+Deal cancelled: {points}|Раздача отменена: {points}|Runde abgebrochen: {points}|Mano cancelada: {points}
+Deal dismissed: {points}|Раздача расписана: {points}|Runde abgeschrieben: {points}|Mano abandonada: {points}
+Score adjustment: {points}|Изменение счёта: {points}|Punkteänderung: {points}|Ajuste de puntos: {points}
+Trust is only available before a four-player Thousand deal|Доверить карты можно только до раздачи в Тысяче на четверых|Vertrauen nur vor einer Vierer-Runde Tausend möglich|Solo se puede confiar antes de una mano de Mil para cuatroYou|Вы|Du|Tú
 Options|Настройки|Optionen|Opciones
 Cancel|Отмена|Abbrechen|Cancelar
 Hand options|Настройки руки|Handoptionen|Opciones de la mano
@@ -348,7 +366,7 @@ const locales=['en','ru','de','es'],maps=Object.fromEntries(locales.map((locale,
 let active;try{active=localStorage.getItem('pastimer-language');}catch{}if(!locales.includes(active)){const candidate=(window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code||navigator.language||'en').slice(0,2);active=locales.includes(candidate)?candidate:'en';}
 export const language=()=>active;
 const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-const patterns=catalog.filter(([key])=>key.includes('{')).map(([key])=>{const names=[...key.matchAll(/\{(\w+)\}/g)].map(m=>m[1]);let source='',at=0;for(const m of key.matchAll(/\{(\w+)\}/g)){source+=escape(key.slice(at,m.index))+(m[1]==='n'||m[1]==='n2'||m[1]==='points'?'(-?\\d+)':'(.+?)');at=m.index+m[0].length;}source+=escape(key.slice(at));return{key,names,re:new RegExp(`^${source}$`)}}).sort((a,b)=>b.key.replace(/\{\w+\}/g,'').length-a.key.replace(/\{\w+\}/g,'').length);
+const patterns=catalog.filter(([key])=>key.includes('{')).map(([key])=>{const names=[...key.matchAll(/\{(\w+)\}/g)].map(m=>m[1]);let source='',at=0;for(const m of key.matchAll(/\{(\w+)\}/g)){source+=escape(key.slice(at,m.index))+(m[1]==='n'||m[1]==='n2'||m[1]==='points'?'([+-]?\\d+)':'(.+?)');at=m.index+m[0].length;}source+=escape(key.slice(at));return{key,names,re:new RegExp(`^${source}$`)}}).sort((a,b)=>b.key.replace(/\{\w+\}/g,'').length-a.key.replace(/\{\w+\}/g,'').length);
 function parameter(name,value){if(['rank','suit','status','date'].includes(name))return maps[active].get(value)??value;if(name==='player'||name==='other')return value==='Table'?(maps[active].get('Table')??value):value.replace(/Computer (\d+)/g,(_,n)=>(maps[active].get('Computer {n}')??'Computer {n}').replace('{n}',n));return value;}
 export function translate(text){const original=text,trimmed=text.trim();if(!trimmed)return text;if(trimmed.match(/^\d+ cards$/)){const n=Number(trimmed.split(' ')[0]);const label=active==='ru'?(n%10===1&&n%100!==11?'карта':n%10>=2&&n%10<=4&&!(n%100>=12&&n%100<=14)?'карты':'карт'):active==='de'?(n===1?'Karte':'Karten'):active==='es'?(n===1?'carta':'cartas'):(n===1?'card':'cards');return text.replace(trimmed,`${n} ${label}`);}
  const exact=maps[active].get(trimmed);if(exact)return original.replace(trimmed,exact);

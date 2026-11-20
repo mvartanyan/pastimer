@@ -14,6 +14,11 @@ One **deal** is a раздача, one **trick** is a взятка, and a **match
 - With four players the dealer sits out, determines the deck randomization, and, unless on the barrel, receives 10 points per ace in the stock plus half the value of a marriage in the stock. The bonuses are additive.
 - With three players there is no dealer stock bonus.
 
+## Dealer observation
+
+- The sitting-out human dealer may watch the current acting player's hand, in read-only form. A computer's hand is visible automatically; a human player's hand stays private unless that player chooses "Trust dealer" before the deal starts.
+- Consent applies only to the named dealer and the upcoming deal. It defaults to off and expires when that deal is settled or cancelled, including a redeal with the same dealer. It cannot be changed after dealing starts. Other active players and computer strategies do not gain access to these hands.
+
 ## Auction and stock
 
 - The player after the dealer posts compulsory 100.

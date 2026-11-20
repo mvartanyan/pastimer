@@ -11,7 +11,7 @@
     "dev": "cargo run --locked",
     "check": "cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings",
     "test": "cargo test --locked",
-    "test:browser": "cargo build --locked && node tests/browser-smoke.mjs && node tests/thousand-browser.mjs && node tests/marriage-browser.mjs && node tests/playability-browser.mjs && node tests/computer-browser.mjs && node tests/durak-browser.mjs"
+    "test:browser": "cargo build --locked && node tests/browser-smoke.mjs && node tests/thousand-browser.mjs && node tests/marriage-browser.mjs && node tests/dealer-browser.mjs && node tests/playability-browser.mjs && node tests/computer-browser.mjs && node tests/durak-browser.mjs"
   },
   "devDependencies": {
     "playwright": "^1.65.0"

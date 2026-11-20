@@ -18,6 +18,8 @@ Captured as viewport images at a 390 x 650 CSS-pixel viewport with a 1x device s
 | Russian lobby and direct solo buttons (full-page UI fixture, November 15) | [10-lobby-ru.png](10-lobby-ru.png) |
 | Transparent marriage rings and inset hand-info borders (UI fixture, November 15) | [11-transparent-marriage.png](11-transparent-marriage.png) |
 
+The November 20 changes are shown in [the read-only current-player dealer hand](12-dealer-observer.png), [previous score / deal breakdown / new score](13-deal-progression.png), and [the winner's progression](14-deal-winner.png). These are controlled headless UI fixtures at 390x650. The seven-size checks include 320x480 and both landscape sizes.
+
 Regenerate from the repository root after installing the optional browser dependencies described in the [handoff](../handoff.md):
 
 ```sh

@@ -341,6 +341,27 @@ fn replay_thousand(
                 check(command_index == 0, "Unexpected setup event")?;
                 continue;
             }
+            Some("dealer.trust.changed") => {
+                let dealer = &players[state.dealer].id;
+                check(
+                    expected.is_empty()
+                        && !pending_deck
+                        && players.len() == 4
+                        && matches!(state.phase, crate::thousand::Phase::AwaitShuffle)
+                        && !computers.contains(dealer)
+                        && event["data"]["dealer"] == *dealer
+                        && event["data"]["deal"] == state.deal + 1
+                        && event["data"]["trusted"].is_boolean()
+                        && event["actor"] == event["data"]["player"]
+                        && event["actor"].as_str().is_some_and(|id| {
+                            id != dealer
+                                && players.iter().any(|p| p.id == id)
+                                && !computers.contains(id)
+                        }),
+                    "Invalid dealer trust event",
+                )?;
+                continue;
+            }
             Some("computer.deal.requested") => {
                 let dealer = &players[state.dealer].id;
                 check(

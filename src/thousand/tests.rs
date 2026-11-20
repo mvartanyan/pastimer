@@ -730,3 +730,123 @@ fn audit_rejects_teleported_cards_and_false_trick_winners() -> TestResult {
     assert!(verify::record(&record, &deck, &s.settings, None).is_err());
     Ok(())
 }
+
+#[test]
+fn dealer_visibility_is_scoped_to_permissions_deal_and_viewer() -> TestResult {
+    let (p, mut s, _) = dealt(4)?;
+    s.phase = Phase::Trick {
+        turn: 1,
+        plays: vec![],
+    };
+    let computers = vec!["p1".into()];
+    let mut trust = BTreeMap::new();
+    let view = s.dealer_hands("p0", &p, &computers, &trust);
+    assert_eq!(view.len(), 1);
+    assert_eq!(view[0].player, "p1");
+    assert_eq!(view[0].cards.as_ref(), s.hands.get("p1"));
+    assert_eq!(view[0].legal_cards, s.legal_cards("p1"));
+    s.phase = Phase::Trick {
+        turn: 2,
+        plays: vec![],
+    };
+    let hidden = s.dealer_hands("p0", &p, &computers, &trust);
+    assert_eq!(hidden.len(), 1);
+    assert!(hidden[0].cards.is_none());
+    assert!(hidden[0].legal_cards.is_empty());
+    trust.insert(
+        "p2".into(),
+        crate::model::DealerConsent {
+            deal: s.deal,
+            dealer: "p0".into(),
+        },
+    );
+    let permitted = s.dealer_hands("p0", &p, &computers, &trust);
+    assert_eq!(permitted.len(), 1);
+    assert_eq!(permitted[0].cards.as_ref(), s.hands.get("p2"));
+    assert_eq!(permitted[0].legal_cards, s.legal_cards("p2"));
+    for viewer in ["p1", "p2", "p3", "outsider"] {
+        assert!(s.dealer_hands(viewer, &p, &computers, &trust).is_empty());
+    }
+    assert!(
+        s.view("p1", &p, 0).dealer_hands.is_empty(),
+        "Computer strategy projections never gain spectator cards"
+    );
+    trust.get_mut("p2").ok_or("consent")?.deal += 1;
+    assert!(
+        s.dealer_hands("p0", &p, &computers, &trust)[0]
+            .cards
+            .is_none()
+    );
+    trust.get_mut("p2").ok_or("consent")?.deal = s.deal;
+    trust.get_mut("p2").ok_or("consent")?.dealer = "p3".into();
+    assert!(
+        s.dealer_hands("p0", &p, &computers, &trust)[0]
+            .cards
+            .is_none()
+    );
+    s.phase = Phase::Trick {
+        turn: 3,
+        plays: vec![],
+    };
+    assert!(
+        s.dealer_hands("p0", &p, &computers, &trust)[0]
+            .cards
+            .is_none(),
+        "Only the current player's hand is sent"
+    );
+    Ok(())
+}
+
+#[test]
+fn result_breakdown_explains_marriages_contracts_and_limits() -> TestResult {
+    let (p, s, _) = dealt(3)?;
+    let mut s = prepare(s, &p)?;
+    let winner = s.contractor.ok_or("contractor")?;
+    let other = (winner + 1) % 3;
+    let id = p[other].id.clone();
+    s.checkpoint.totals.insert(id.clone(), 45);
+    s.ledger.totals.insert(id.clone(), 320);
+    s.tricks = vec![Trick {
+        number: 1,
+        plays: vec![],
+        trump: None,
+        winner: id.clone(),
+        points: 95,
+    }];
+    s.marriages = vec![
+        Marriage {
+            player: id.clone(),
+            suit: Suit::H,
+            trick: 2,
+        },
+        Marriage {
+            player: id.clone(),
+            suit: Suit::D,
+            trick: 3,
+        },
+    ];
+    let mut record = s.record("completed", &p)?;
+    let b = record.breakdown();
+    assert_eq!(b[&id]["trickPoints"], 95);
+    assert_eq!(b[&id]["rawPoints"], 275);
+    assert_eq!(b[&id]["delta"], 275);
+    assert!(b[&id]["adjustment"].is_null());
+    record.contract = Some(Contract {
+        player: id.clone(),
+        order: 200,
+        compulsory: false,
+    });
+    record.after.totals.insert(id.clone(), 245);
+    assert_eq!(record.breakdown()[&id]["adjustment"], "contract");
+    assert_eq!(record.breakdown()[&id]["delta"], 200);
+    record.contract = None;
+    record.before.totals.insert(id.clone(), 890);
+    record.after.totals.insert(id.clone(), 900);
+    assert_eq!(record.breakdown()[&id]["adjustment"], "limit");
+    assert_eq!(record.breakdown()[&id]["delta"], 10);
+    record.status = "cancelled".into();
+    record.after = record.before.clone();
+    assert_eq!(record.breakdown()[&id]["adjustment"], "cancelled");
+    assert_eq!(record.breakdown()[&id]["delta"], 0);
+    Ok(())
+}

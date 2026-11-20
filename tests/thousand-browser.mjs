@@ -102,7 +102,7 @@ try{
         }
       }
       room=await read(host);assert.equal(room.table.lastDeal.status,'completed');if(count===4){for(const page of pages)assert.equal(await page.locator('.seat-dealer').getAttribute('data-player'),room.table.lastDeal.dealer,'Keep the completed deal participants inspectable after the next dealer rotates');}await host.screenshot({path:'/tmp/pastimer-thousand-mobile.png',fullPage:true});
-      for(const page of pages)for(const button of await page.locator('.seat-hand:not(:disabled)').all()){await button.click();assert.equal(await page.locator('#inspector .playing-card').count(),3);await page.getByRole('button',{name:'Close trick',exact:true}).click();}
+      for(const page of pages)for(const button of await page.locator('.result-player:not(:disabled)').all()){await button.click();assert.equal(await page.locator('#inspector .playing-card').count(),3);await page.getByRole('button',{name:'Close trick',exact:true}).click();}
     }
     const audit=await host.evaluate(async code=>await(await fetch(`/api/rooms/${code}/audit`)).json(),code);const file=join(directory,`audit-${count}.json`);await writeFile(file,JSON.stringify(audit));const verified=JSON.parse(execFileSync(join(dirname(binary),'verify-audit'),[file],{encoding:'utf8'}));assert.equal(verified.valid,true);assert.equal(verified.deals,1);
     // A fresh Mini App browser window has neither sessionStorage nor localStorage.
